@@ -1,0 +1,19 @@
+<h1>{{title}}</h1>
+<div id="tools">
+    {{#if tools}}
+        <table style="border-top: 0; margin-bottom: 0;">
+            {{#each tools}}
+                <tr>
+                    <td nowrap="nowrap" style="padding: 0.7em;">
+                        <p><a href="{{link}}">{{name}}</a></p>
+                    </td>
+                    <td nowrap="nowrap" style="padding: 0.7em; width: 100%;">
+                        <p>{{description}}</p>
+                    </td>
+                </tr>
+            {{/each}}
+        </table>
+    {{else}}
+        <div id="warn" class="message">No tools defined. Check config.js.</div>
+    {{/if}}
+</div>

@@ -1,0 +1,273 @@
+<h1>{{title}}</h1>
+<p>{{description}}</p>
+<hr style="width: 100%; margin-top: 1em; margin-bottom: 1em;"/>
+<div id="container" style="overflow:hidden;">
+    <div id="source" style="width: 49%; height: 100%; float: left;">
+        <form class="form" action="cleantrials" method="POST" enctype="application/x-www-form-urlencoded">
+            <table style="border-top: 0;">
+                <tr>
+                    <th nowrap="nowrap" colspan="2">Source Area</th>
+                </tr>
+                <tr>
+                    {{#if srcUuids}}
+                        <td nowrap="nowrap" width="1%">
+                            <label for="src_uuid">Area Name:</label>
+                        </td>
+                        <td nowrap="nowrap" width="100%">
+                            <select id="src_uuid" name="src_uuid" style="width: 100%;">
+                                {{#each srcUuids}}
+                                    {{#if (eq ../srcUuid uuid)}}
+                                        <option value="{{uuid}}" selected="selected">{{name}}</option>
+                                    {{else}}
+                                        <option value="{{uuid}}">{{name}}</option>
+                                    {{/if}}
+                                {{/each}}
+                            </select>
+                        </td>
+                    {{else}}
+                        <td nowrap="nowrap" width="1%">
+                            <label for="src_uuid">Area UUID:</label>
+                        </td>
+                        <td nowrap="nowrap" width="100%">
+                            <input type="text" name="src_uuid" id="src_uuid" style="width: 100%;" value="{{srcUuid}}">
+                        </td>
+                    {{/if}}
+                </tr>
+                <tr>
+                    <td nowrap="nowrap" width="1%">
+                        <label for="src_user">Mashery User:</label>
+                    </td>
+                    <td nowrap="nowrap" width="100%">
+                        <input type="text" name="src_user" id="src_user" style="width: 100%;" value="{{srcUser}}">
+                    </td>
+                </tr>
+                <tr>
+                    <td nowrap="nowrap" width="1%">
+                        <label for="src_pwd">Password:</label>
+                    </td>
+                    <td nowrap="nowrap" width="100%">
+                        <input type="password" name="src_pwd" id="src_pwd" style="width: 100%;" value="{{srcPwd}}">
+                    </td>
+                </tr>
+                <tr>
+                    <td nowrap="nowrap" width="1%">
+                        <label for="src_key">Platform API Key:</label>
+                    </td>
+                    <td nowrap="nowrap" width="100%">
+                        <input type="text" name="src_key" id="src_key" style="width: 100%;" value="{{srcKey}}">
+                    </td>
+                </tr>
+                <tr>
+                    <td nowrap="nowrap" width="1%">
+                        <label for="src_secret">API Key Secret:</label>
+                    </td>
+                    <td nowrap="nowrap" width="100%">
+                        <input type="text" name="src_secret" id="src_secret" style="width: 100%;" value="{{srcSecret}}">
+                    </td>
+                </tr>
+            </table>
+            <input type="submit"
+                   name="load_src_services"
+                   id="load_src_services"
+                   value="Load Services"
+                   class="btnRight"/>
+        </form>
+        {{#if srcServices}}
+            <div id="srcServices" style="margin-top: 4em;">
+                {{#each srcServices}}
+                    <div id="{{id}}" style="position: relative;">
+                        <form id="copyform{{id}}" class="form" action="cleantrials" method="POST"
+                              enctype="application/x-www-form-urlencoded">
+                            <table>
+                                <tr>
+                                    <td nowrap="nowrap" width="1%">API Name:</td>
+                                    <td width="100%">{{name}}</td>
+                                </tr>
+                                {{#if version}}
+                                    <tr>
+                                        <td nowrap="nowrap" width="1%">Version:</td>
+                                        <td width="100%">{{version}}</td>
+                                    </tr>
+                                {{/if}}
+                                {{#if description}}
+                                    <tr>
+                                        <td nowrap="nowrap" width="1%">Description:</td>
+                                        <td width="100%" class="md">{{description}}</td>
+                                    </tr>
+                                {{/if}}
+                            </table>
+                            <input type="submit"
+                                   class="btnRight"
+                                   id="copy"
+                                   name="copy"
+                                   value="Copy &raquo;"
+                                   style="position:absolute;right:0;top:0;"/>
+                            <input type="hidden" id="cleantrials{{id}}" name="cleantrials" value="{{id}}">
+                            <input type="hidden" id="tgt_area{{id}}" name="tgt_area">
+                            <input type="hidden" id="src_area{{id}}" name="src_area">
+                            <script type="text/javascript">
+                                <!--
+                                $('#copyform{{id}}').submit(function (event) {
+                                    if ($('#src_uuid option:selected').text() === $('#tgt_uuid option:selected').text()) {
+                                        alert("Source and destination areas must be different");
+                                        event.preventDefault();
+                                    } else {
+                                        centerProc();
+                                        $('#processing').text("Copying {{name}} from " +
+                                            $('#src_uuid option:selected').text() + " to " +
+                                            $('#tgt_uuid option:selected').text());
+                                        $('#processing').css({'display': 'block'});
+                                        $('#tgt_area{{id}}').val($('#tgt_uuid option:selected').text() + "|" +
+                                                $('#tgt_uuid').val());
+                                        $('#src_area{{id}}').val($('#src_uuid option:selected').text() + "|" +
+                                                $('#src_uuid').val());
+                                        return;
+                                    }
+                                });
+                                //-->
+                            </script>
+                        </form>
+                    </div>
+                {{/each}}
+            </div>
+        {{/if}}
+    </div>
+    <div id="dest" style="width: 49%; height: 100%; float: right;">
+        <form class="form" action="cleantrials" method="POST" enctype="application/x-www-form-urlencoded">
+            <table style="border-top: 0;">
+                <tr>
+                    <th nowrap="nowrap" colspan="2">Destination Area</th>
+                </tr>
+                <tr>
+                    {{#if srcUuids}}
+                        <td nowrap="nowrap" width="1%">
+                            <label for="tgt_uuid">Area Name:</label>
+                        </td>
+                        <td nowrap="nowrap" width="100%">
+                            <select id="tgt_uuid" name="tgt_uuid" style="width: 100%;">
+                                {{#each srcUuids}}
+                                    {{#if (eq ../tgtUuid uuid)}}
+                                        <option value="{{uuid}}" selected="selected">{{name}}</option>
+                                    {{else}}
+                                        <option value="{{uuid}}">{{name}}</option>
+                                    {{/if}}
+                                {{/each}}
+                            </select>
+                        </td>
+                    {{else}}
+                        <td nowrap="nowrap" width="1%">
+                            <label for="tgt_uuid">Area UUID:</label>
+                        </td>
+                        <td nowrap="nowrap" width="100%">
+                            <input type="text" name="tgt_uuid" id="tgt_uuid" style="width: 100%;" value="{{srcUuid}}">
+                        </td>
+                    {{/if}}
+                </tr>
+                <tr>
+                    <td nowrap="nowrap" width="1%">
+                        <label for="tgt_user">Mashery User:</label>
+                    </td>
+                    <td nowrap="nowrap" width="100%">
+                        <input type="text" name="_user" id="tgt_user" style="width: 100%;" value="{{srcUser}}">
+                    </td>
+                </tr>
+                <tr>
+                    <td nowrap="nowrap" width="1%">
+                        <label for="tgt_pwd">Password:</label>
+                    </td>
+                    <td nowrap="nowrap" width="100%">
+                        <input type="password" name="tgt_pwd" id="tgt_pwd" style="width: 100%;" value="{{srcPwd}}">
+                    </td>
+                </tr>
+                <tr>
+                    <td nowrap="nowrap" width="1%">
+                        <label for="tgt_key">&nbsp;</label>
+                    </td>
+                    <td nowrap="nowrap" width="100%">
+                        <input type="hidden" name="tgt_key" id="tgt_key" style="width: 100%;" value="{{srcKey}}">
+                    </td>
+                </tr>
+                <tr>
+                    <td nowrap="nowrap" width="1%">
+                        <label for="tgt_secret">&nbsp;</label>
+                    </td>
+                    <td nowrap="nowrap" width="100%">
+                        <input type="hidden" name="tgt_secret" id="tgt_secret" style="width: 100%;" value="{{srcSecret}}">
+                    </td>
+                </tr>
+            </table>
+            <input type="submit"
+                   name="load_tgt_services"
+                   id="load_tgt_services"
+                   value="Load Services"
+                   class="btnRight"
+                   style="margin-top: 0.4em;"/>
+        </form>
+        {{#if tgtServices}}
+            <div id="tgtServices" style="margin-top: 4em;">
+                {{#each tgtServices}}
+                    <div id="{{id}}" style="position: relative;">
+                        <table>
+                            <tr>
+                                <td nowrap="nowrap" width="1%">API Name:</td>
+                                <td width="100%">{{name}}</td>
+                            </tr>
+                            {{#if version}}
+                                <tr>
+                                    <td nowrap="nowrap" width="1%">Version:</td>
+                                    <td width="100%">{{version}}</td>
+                                </tr>
+                            {{/if}}
+                            {{#if description}}
+                                <tr>
+                                    <td nowrap="nowrap" width="1%">Description:</td>
+                                    <td width="100%" class="md">{{description}}</td>
+                                </tr>
+                            {{/if}}
+                        </table>
+                    </div>
+                {{/each}}
+            </div>
+        {{/if}}
+    </div>
+</div>
+<div id="processing" class="message loading" style="display: none; width: 400px; text-align: left;">Copying...</div>
+{{#if tgtApi}}
+    <p style="margin-top: 1em;">Successfully copied {{#if ccUrl}}<a href="{{ccUrl}}/api-definitions/{{apiId}}">{{tgtApi}}</a>{{else}} {{tgtApi}} {{/if}}{{#if tgtArea}} to {{tgtArea}}{{/if}}</p>
+{{/if}}
+{{#if error}}
+    <div id="error" class="errors">{{{error}}}</div>
+{{/if}}
+{{#if warn}}
+    <div id="warn" class="message">{{warn}}</div>
+{{/if}}
+<script src="https://pagedown.googlecode.com/hg/Markdown.Converter.js"></script>
+<script src="https://pagedown.googlecode.com/hg/Markdown.Sanitizer.js"></script>
+<script type="text/javascript">
+    <!--
+    $(function () {
+        $(document).ready(function () {
+            var convert = new Markdown.getSanitizingConverter().makeHtml;
+            $('.md').each(function () {
+                var content = $(this).html();
+                var replace = convert(content);
+                $(this).html(replace);
+            });
+        });
+    });
+    $(window).resize(function() {
+        centerProc();
+    });
+    function centerProc() {
+        var width = ($(window).width() - $('#processing').width()) / 2;
+        var height = ($(window).height() - $('#procesing').height()) / 2;
+
+        $('#processing').css({
+            'position': 'absolute',
+            'left': width + 'px',
+            'top': height + 'px',
+            'padding': '2em'
+        });
+    }
+    //-->
+</script>
