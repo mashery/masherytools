@@ -5,6 +5,24 @@ Tool for converting various API definition formats into Mashery formats.
 
 I created this Web UI wrapper around a collection of [Node.js](https://nodejs.org/) scripts to make more compelling demos of the [Platform API](http://support.mashery.com/docs/read/mashery_api/30) (even though the likely use of the API will be via command-line.) This Web app is implemented using the [Express](http://expressjs.com/) and [Handlebars](http://handlebarsjs.com/) frameworks, and leverages a client library for the Mashery Platform API created by [Cox Automotive](https://github.com/Cox-Automotive/mashery) . The Web UI was designed to be extended using a simple configuration, hoping to encourage additional contribution and a growing set of API-driven tools.
 
+## Prerequisites
+
+Node.js v4.4.3 or later
+
+## Installation
+Post clone of repository, change into the api_definition_converter directory and perform the following commands/steps:
+
+* npm update
+* cp credentials.js.sample credentials.js and update to reflect your Mashery area information and V3 API key information.
+
+## Usage
+
+From within the api_definition_converter directory, run following command:
+
+    node bin/www
+
+Navigate to [http://localhost:3000](http://localhost:3000)
+
 ![Mashery API Tools](/../screenshots/MasheryTools.png?raw=true "Mashery Tools")
 
 **Note:** Target domains _must_ be whitelisted before any of these tools are used, or the endpoint creation will fail.
@@ -62,21 +80,3 @@ This tool consumes a Swagger-based API definition (Swagger 2.0 only is supported
 **Note:** This initial release provides partial support for schema objects used as method parameters. Specifically, arrays/lists of schema objects are not supported at this point.
 
 ![Swagger IODocs Converter](/../screenshots/Swagger2IODocs.png?raw=true "Swagger IODocs Converter")
-
-## Prerequisites
-
-Node.js v4.4.3 or later
-
-## Installation
-Post clone of repository, change into the api_definition_converter directory and perform the following commands/steps:
-
-* npm update
-* cp credentials.js.sample credentials.js and update to reflect your Mashery area information and V3 API key information.
-
-## Usage
-
-From within the api_definition_converter directory, run following command:
-
-    node bin/www
-
-Navigate to [http://localhost:3000](http://localhost:3000)
