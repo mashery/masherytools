@@ -167,13 +167,31 @@ router.post('/', function(req, res) {
                 if (serviceList.length === 0) {
                     // not found
                     console.log("API definition '" + apiName + "' not found'");
+                    res.render('swagger2iodocs', {
+                        title: 'Swagger2IODocs',
+                        description: description,
+                        error: errorMsg ? errorMsg : "API definition '" + apiName + "' not found'",
+                        warn: warnMsg,
+                        tgtUuid: mashery_area_uuids[0].uuid,
+                        tgtUuids: mashery_area_uuids
+                    });
+                    return;
                 } else {
                     if (serviceList.length === 1) {
                         // exact match
                         apiId = serviceList[0].id;
                     } else {
                         // more than one match
-                        console.log("Multiple matches");
+                        console.log("Multiple APIs named '" + apiName + "' found");
+                        res.render('swagger2iodocs', {
+                            title: 'Swagger2IODocs',
+                            description: description,
+                            error: errorMsg ? errorMsg : "Multiple API definitions named '" + apiName + "' found'",
+                            warn: warnMsg,
+                            tgtUuid: mashery_area_uuids[0].uuid,
+                            tgtUuids: mashery_area_uuids
+                        });
+                        return;
                     }
                 }
                 if (swaggerDoc.apis) { // Swagger 1.2
