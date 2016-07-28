@@ -209,7 +209,7 @@ router.post('/', function(req, res) {
                 tgtUuids: mashery_area_uuids
             });
         }
-    }, 2000);
+    }, 10000);
 
     /**************************
      * check domain whitelist *

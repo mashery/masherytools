@@ -75,8 +75,57 @@ This tool consumes a WSDL-based SOAP Web service definition and creates a Masher
 
 This tool consumes a Swagger-based API definition (Swagger 2.0 only is supported at this point) and creates a Mashery IO Docs definition. The tool can be run in preview mode before being executed against a specific area. When run in preview mode, the generated IO Docs is printed to the browser, and can be copied/pasted into the IO Docs editor in the Mashery Control Center. When executed against a specific area, the IO Docs definition is created in the target area if none already exists, or updated if a definition does exist.
 
+**NEW feature:** an option to generate a sample response from a schema object in a textarea control. In order to render the sample in a syntax highlighting control, the following additional steps are required:
+
+* Add the following to the Head JavaScript section in the Portal Settings page:
+
+```javascript
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script type="text/javascript">
+var $j = jQuery.noConflict();
+</script>
+```
+
+* Add the following styles to the last-minute CSS section:
+
+```css
+pre.sample {
+  margin: 0;
+  height: 150px;
+  resize: both;
+  overflow: auto;
+}
+```
+
+* Add the following to the Body JavaScript section:
+
+```javascript
+portalReady(function () {
+    /*************************************************
+     * IODocs syntax highlighting for Swagger sample *
+     *************************************************/
+    var iodocs = document.querySelector("#page-ioDocs");
+    if (undefined !== iodocs) {
+        var sample = $j( "textarea[name='params[response_sample]']" );
+        if (undefined !== sample) {
+            sample.addClass("sample");
+            $j( "textarea.sample").before(function () {
+                var json = $j(this).val();
+                if (undefined !== json) {
+                    return "<pre class='response prettyprint sample'>" + json + "</pre>";
+                } else {
+                    return "";
+                }
+            });
+            sample.hide();
+            prettyPrint();
+        }
+    }
+});
+```
+
 **Caution:** No warning is provided before overwriting an existing IO Docs definition. _Use with care_.
 
-**Note:** This initial release provides partial support for schema objects used as method parameters. Specifically, arrays/lists of schema objects are not supported at this point.
+**Note:** This tool provides partial support for schema objects used as method parameters. Specifically, arrays/lists of schema objects are not supported at this point.
 
 ![Swagger IODocs Converter](/../screenshots/Swagger2IODocs.png?raw=true "Swagger IODocs Converter")

@@ -1,7 +1,6 @@
 var express = require('express');
 var router = express.Router();
 
-var swagger = require('swagger-parser');
 var http  = require('http');  // HTTP client
 var https = require('https'); // HTTP client
 var url = require('url');	  // URL parser
@@ -9,6 +8,18 @@ var fs = require('fs');	  // File system
 var path = require('path');  // Directory
 var mashery = require('mashery');
 var _ = require('lodash');
+var jsf = require('json-schema-faker');
+var bunyan = require('bunyan');
+
+var log = bunyan.createLogger({
+    name: 'swagger2iodocs',
+    serializers: {
+        req: bunyan.stdSerializers.req,
+        res: bunyan.stdSerializers.res,
+        err: bunyan.stdSerializers.err
+    },
+    level : bunyan.DEBUG
+});
 
 var multer = require('multer');
 router.use(multer({storage: multer.memoryStorage(), inMemory:true}).single('input_file'));
@@ -67,6 +78,7 @@ router.post('/', function(req, res) {
     })[0].cc_url;
 
     var printOnly = req.body.print_only ? true : false;
+    var genRespSample = req.body.gen_resp ? true : false;
     var validateSwagger = req.body.validate_swagger ? true : false;
     
     /*******************************
@@ -164,14 +176,14 @@ router.post('/', function(req, res) {
 
             apiClient.methods.fetchAllServices(svcArgs, function (serviceList, serviceRawResponse) {
                 //console.log(serviceList);
-                if (serviceList.length === 0) {
+                if (serviceList.length === 0 && !printOnly) {
                     // not found
-                    console.log("API definition '" + apiName + "' not found'");
+                    log.info("API definition '" + apiName + "' not found'");
                     res.render('swagger2iodocs', {
                         title: 'Swagger2IODocs',
                         description: description,
-                        error: errorMsg ? errorMsg : "API definition '" + apiName + "' not found'",
-                        warn: warnMsg,
+                        error: errorMsg ? errorMsg : "API definition '" + apiName + "' not found",
+                        warn: warnMsg? warnMsg : "Use Swagger2Mashery to create the API definition before generating IODocs",
                         tgtUuid: mashery_area_uuids[0].uuid,
                         tgtUuids: mashery_area_uuids
                     });
@@ -181,17 +193,19 @@ router.post('/', function(req, res) {
                         // exact match
                         apiId = serviceList[0].id;
                     } else {
-                        // more than one match
-                        console.log("Multiple APIs named '" + apiName + "' found");
-                        res.render('swagger2iodocs', {
-                            title: 'Swagger2IODocs',
-                            description: description,
-                            error: errorMsg ? errorMsg : "Multiple API definitions named '" + apiName + "' found'",
-                            warn: warnMsg,
-                            tgtUuid: mashery_area_uuids[0].uuid,
-                            tgtUuids: mashery_area_uuids
-                        });
-                        return;
+                        if (serviceList.length > 1 && !printOnly) {
+                            // more than one match
+                            log.info("Multiple APIs named '" + apiName + "' found");
+                            res.render('swagger2iodocs', {
+                                title: 'Swagger2IODocs',
+                                description: description,
+                                error: errorMsg ? errorMsg : "Multiple API definitions named '" + apiName + "' found",
+                                warn: warnMsg,
+                                tgtUuid: mashery_area_uuids[0].uuid,
+                                tgtUuids: mashery_area_uuids
+                            });
+                            return;
+                        }
                     }
                 }
                 if (swaggerDoc.apis) { // Swagger 1.2
@@ -212,7 +226,7 @@ router.post('/', function(req, res) {
                 tgtUuids: mashery_area_uuids
             });
         }
-    }, 2000);
+    }, 10000);
 
     var iodocsDef = {
         name: '',
@@ -257,6 +271,13 @@ router.post('/', function(req, res) {
         iodocsDef.name = apiName;
         iodocsDef.title = apiName;
         iodocsDef.description = apiDesc;
+
+        // make a copy of the schema definitions section to force required for sample generation
+        var definitions = JSON.parse(JSON.stringify(swaggerDoc.definitions));
+        for (var def in definitions) {
+            definitions[def].required = Object.keys(definitions[def].properties);
+            //console.log(JSON.stringify(definitions[def], null, 2));
+        }
 
         //console.log("# of paths: " + Object.keys(swaggerDoc.paths).length);
         for (var p in swaggerDoc.paths) {
@@ -306,7 +327,15 @@ router.post('/', function(req, res) {
                                     location: 'header',
                                     enum: ctypeEnum
                                 }
-                            }
+                            }/* else {
+                                ctypeEnum.push('application/json');
+                                methods[cleanPath][opId]['parameters']['Content-Type'] = {
+                                    description: 'Content type of the request payload',
+                                    required: true,
+                                    location: 'header',
+                                    enum: ctypeEnum
+                                }
+                            }*/
 
                             if (swaggerDoc.paths[p][keyName].produces) {
                                 var acceptEnum = [];
@@ -332,15 +361,16 @@ router.post('/', function(req, res) {
                                                     var schemaName = ref[ref.length - 1];
 
                                                     var oSchema = swaggerDoc.definitions[schemaName];
-                                                    if ('undefined' != oSchema) {
+                                                    if (undefined != oSchema) {
                                                         //console.log("Schema object: %s", JSON.stringify(oSchema, null, 3));
                                                         iodocsDef.schemas[schemaName] = oSchema;
                                                         methods[cleanPath][opId]['request'] = {
                                                             $ref: schemaName
-                                                        };                                                    }
+                                                        };
+                                                    }
                                                 } else {
-                                                    console.log("TODO: figure out how to do this without defining a 'wrapper' schema object");
-                                                    if (oParam.schema.type && oParam.schema.type === 'array') {
+                                                    log.info("TODO: figure out how to do this without defining a 'wrapper' schema object");
+                                                    if (oParam.schema.type && oParam.schema.type === 'array' && oParam.schema.items) {
                                                         methods[cleanPath][opId]['parameters'][oParam.name] = {
                                                             description: oParam.description,
                                                             required: oParam.required,
@@ -377,6 +407,70 @@ router.post('/', function(req, res) {
                                                 location: 'body'
                                             };
                                             break;
+                                    }
+                                }
+                                // add sample field
+                                if (genRespSample) {
+                                    if (swaggerDoc.paths[p][keyName].responses["200"]) {
+                                        //console.log("Found 200 response for %s", p);
+                                        var respSchema = swaggerDoc.paths[p][keyName].responses["200"].schema;
+                                        var schemaRef;
+                                        if (respSchema) {
+                                            schemaRef = respSchema['$ref'];//swaggerDoc.paths[p][keyName].responses["200"].schema['$ref'];
+                                        }
+                                        if (undefined != schemaRef) {
+                                            var ref = schemaRef.split('/');
+                                            var schemaName = ref[ref.length - 1];
+                                            var schemaObj = JSON.parse(JSON.stringify(swaggerDoc.definitions[schemaName]));
+                                            //var schemaObj = definitions[schemaName];
+                                            schemaObj.required = Object.keys(schemaObj.properties);
+                                            schemaObj.definitions = definitions; //swaggerDoc.definitions;
+                                            try {
+                                                var sample = jsf(schemaObj);
+                                            } catch (e) {
+                                                console.error("Sample generation failed for %s", p);
+                                                console.error(e.message);
+                                            }
+                                            if (sample) {
+                                                methods[cleanPath][opId]['parameters']['response_sample'] = {
+                                                    required: false,
+                                                    type: 'textarea',
+                                                    location: 'empty',
+                                                    description: 'Sample response payload',
+                                                    default: JSON.stringify(sample, null, 2)
+                                                };
+                                            }
+                                        } else {
+                                            // could it be an array?
+                                            var respSchemaItems = swaggerDoc.paths[p][keyName].responses["200"].schema.items;
+                                            var schemaItemsRef;
+                                            if (respSchemaItems) {
+                                                schemaItemsRef = respSchemaItems['$ref'];
+                                            }
+                                            if (undefined != schemaItemsRef) {
+                                                var ref = schemaItemsRef.split('/');
+                                                var schemaName = ref[ref.length - 1];
+                                                var schemaObj = JSON.parse(JSON.stringify(swaggerDoc.definitions[schemaName]));
+                                                //var schemaObj = definitions[schemaName];
+                                                schemaObj.required = Object.keys(schemaObj.properties);
+                                                schemaObj.definitions = definitions; //swaggerDoc.definitions;
+                                                try {
+                                                    var sample = jsf(schemaObj);
+                                                } catch (e) {
+                                                    console.error("Sample array generation failed for %s", p);
+                                                    console.error(e.message);
+                                                }
+                                                if (sample) {
+                                                    //console.log(JSON.stringify(sample, 2, null));
+                                                    methods[cleanPath][opId]['parameters']['response_sample'] = {
+                                                        required: false,
+                                                        type: 'textarea',
+                                                        location: 'empty',
+                                                        description: 'Sample response payload',
+                                                        default: '[' + JSON.stringify(sample, null, 2) + ']'
+                                                    };
+                                                }
+                                            }                                        }
                                     }
                                 }
                             }
@@ -424,14 +518,14 @@ router.post('/', function(req, res) {
 
                 if (ioDocDef.errorCode && ioDocDef.errorCode === 404) {
                     // create a new IO Docs definition
-                    console.log("API '%s' does not yet have an IO Docs definition", apiName);
+                    log.info("API '%s' does not yet have an IO Docs definition", apiName);
                     apiClient.methods.createIODocs(ioData, function (ioDoc, createRawResponse) {
                         //console.log(JSON.stringify(ioDoc, null, 3));
                         setTimeout(renderOutput('create'), renderTimeout);
                     });
                 } else {
                     // an IO Docs definition exists, need to update it
-                    console.log("API '%s' alraedy has an IO Docs definition", apiName);
+                    log.info("API '%s' alraedy has an IO Docs definition", apiName);
                     apiClient.methods.updateIODocs(ioData, function (ioDoc, updateRawResponse) {
                         //console.log(JSON.stringify(ioDoc, null, 3));
                         setTimeout(renderOutput('update'), renderTimeout);
@@ -440,7 +534,7 @@ router.post('/', function(req, res) {
             });
 
         } else {
-            console.log("Render timeout: " + renderTimeout);
+            log.info("Render timeout: " + renderTimeout);
             setTimeout(renderOutput, renderTimeout);
         }
     };

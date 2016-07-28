@@ -32,7 +32,7 @@
     <p>{{description}}</p>
     <hr style="width: 100%; margin-top: 1em; margin-bottom: 1em;"/>
     <div id="data_source" style="overflow:hidden;">
-        <form class="form" action="swagger2iodocs" method="POST" enctype="multipart/form-data">
+        <form id="swaggerform" class="form" action="swagger2iodocs" method="POST" enctype="multipart/form-data">
             <table style="border-top: 0; margin-bottom: 0;">
                 <tr>
                     <td nowrap="nowrap" width="1%">
@@ -74,9 +74,13 @@
                         <input id="print_only" name="print_only" type="checkbox" checked/>
                         <label class="formlabel" style="text-align: right;">&nbsp;Preview Only</label>
                     </td>
-                    <td colspan="2">
-                        <input id="print_only" name="validate_swagger" type="checkbox"/>
+                    <td nowrap="nowrap">
+                        <input id="validate_swagger" name="validate_swagger" type="checkbox"/>
                         <label class="formlabel" style="text-align: right;">&nbsp;Validate Source (Swagger 2.0 only)</label>
+                    </td>
+                    <td nowrap="nowrap">
+                        <input id="gen_resp" name="gen_resp" type="checkbox" checked/>
+                        <label class="formlabel" style="text-align: right;">&nbsp;Generate Sample Response</label>
                     </td>
                 </tr>
             </table>
@@ -109,7 +113,7 @@
                                 $('#input_file').val() + " into " +
                                 $('#tgt_uuid option:selected').text());
                         $('#processing').css({'display': 'block'});
-                        $('#wsdlform').submit();
+                        $('#swaggerform').submit();
                     }
                 });
                 $('#loadData').click(function (event) {
@@ -122,7 +126,7 @@
                                 $('#input_url').val() + " into " +
                                 $('#tgt_uuid option:selected').text());
                         $('#processing').css({'display': 'block'});
-                        $('#wsdlform').submit();
+                        $('#swaggerform').submit();
                     }
                 });
                 //-->
