@@ -33,7 +33,7 @@ Navigate to [http://localhost:3000](http://localhost:3000)
 
 This tool allows the user to send an SMS notification to the owner of an API key about the key's status.
 
-**Note:** The demo uses the Twilio communications API and the Pusher API. A Twilio account is required (a trial account is sufficient) as is a Pusher account and application (all configured in the .env configuration file.) 
+**Note:** The demo uses the [Twilio Programmable SMS](https://www.twilio.com/sms) API and the [Pusher](https://pusher.com) API. A Twilio account is required (a trial account is sufficient) as is a Pusher account and application (all configured in the .env configuration file.) 
 
 ![Copy API](/../screenshots/KeyList.png?raw=true "API Keys")
 
