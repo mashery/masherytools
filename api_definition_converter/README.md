@@ -12,7 +12,7 @@ Node.js v4.4.3 or later
 ## Installation
 Post clone of repository, change into the api_definition_converter directory and perform the following commands/steps:
 
-* npm update
+* npm install
 * cp credentials.js.sample credentials.js and update to reflect your Mashery area information and V3 API key information.
 
 ## Usage

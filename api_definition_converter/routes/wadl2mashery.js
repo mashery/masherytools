@@ -242,8 +242,10 @@ router.post('/', function (req, res) {
                         if (method) {
                             var methodName = method.attribute('name');
                             if (methodName && methodName.length() > 0) {
-                                var httpMethod = methodName.toString().toLowerCase();
-                                httpMethods.push(httpMethod);
+                                methodName.each( function(item, index) {
+                                    var httpMethod = item.toString().toLowerCase();
+                                    httpMethods.push(httpMethod);
+                                })
                             } else {
                                 warnMsgs.push("Resource " + cleanPath + " does not have a valid HTTP method. Skipping.");
                             }
@@ -251,9 +253,18 @@ router.post('/', function (req, res) {
                             warnMsgs.push("Resource " + cleanPath + " does not have a method. Skipping.");
                         }
 
-                        var obj = {
-                            name: method.attribute('id').toString()
-                        };
+                        var methodId = method.attribute('id');
+                        var obj;
+                        if (undefined !== methodId && methodId.length() > 0) {
+                            obj = {
+                                name: methodId.toString()
+                            };
+                        } else {
+                            obj = {
+                                name: cleanPath
+                            }
+                        }
+                        //console.log("methodId: '%s'", obj.name);
                         if (!containsObject(obj, methods)) {
                             methods.push(obj);
                         } else {
@@ -289,7 +300,7 @@ router.post('/', function (req, res) {
                                         data: {
                                             "name": cleanPath,
                                             "outboundRequestTargetPath": parsedTargetUrl.path,
-                                            "outboundTransportProtocol": "use-inbound",
+                                            "outboundTransportProtocol": parsedTargetUrl.protocol === 'https:' ? 'https' : 'http',
                                             "supportedHttpMethods": httpMethods,
                                             "methods": methods,
                                             "publicDomains": [{
@@ -302,7 +313,7 @@ router.post('/', function (req, res) {
                                             "inboundSslRequired": parsedTargetUrl.protocol === 'https:' ? true : false
                                         }
                                     };
-                                    console.log(epArgs);
+                                    //console.log(epArgs);
                                     setTimeout(createEndpoint, (index+2)*1000, epArgs);
                                 } else {
                                     errorMsg = "API ID is undefined. Service has not been created yet?"
@@ -502,17 +513,17 @@ router.post('/', function (req, res) {
                                 } else {
                                     warnMsgs.push("Resource " + cleanPath + " does not have a valid HTTP method. Skipping.");
                                 }
+
+                                var obj = {
+                                    name: method.attribute('id').toString()
+                                };
+                                if (obj.name !== "" && !containsObject(obj, methods)) {
+                                    methods.push(obj);
+                                } else {
+                                    //console.log("      Method %s already in methods", printJson(obj));
+                                }
                             } else {
                                 warnMsgs.push("Resource " + cleanPath + " does not have a method. Skipping.");
-                            }
-
-                            var obj = {
-                                name: method.attribute('id').toString()
-                            };
-                            if (!containsObject(obj, methods)) {
-                                methods.push(obj);
-                            } else {
-                                //console.log("      Method %s already in methods", printJson(obj));
                             }
 
                             // check if target domain is whitelisted
@@ -546,7 +557,7 @@ router.post('/', function (req, res) {
                                                 "outboundRequestTargetPath": parsedTargetUrl.path,
                                                 "outboundTransportProtocol": parsedTargetUrl.protocol === 'https:' ? 'https' : 'http',
                                                 "supportedHttpMethods": httpMethods,
-                                                "methods": methods,
+                                                //"methods": methods.length > 0 ? methods : [],
                                                 "publicDomains": [{
                                                     "address": trafficManagerHost
                                                 }],
