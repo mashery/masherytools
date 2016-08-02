@@ -31,7 +31,7 @@ Navigate to [http://localhost:3000](http://localhost:3000)
 
 ### API Key Notification
 
-This tool allows the user to send an SMS notification to the owner of an API key about the key's status.
+This tool listens to Mashery Event Triggers (after key create/update/delete) and sends a text message to the key owner and an administrator about the key status. The UI allows the user to manually send an SMS notification to the owner of an API key about the key's status.
 
 **Note:** The demo uses the [Twilio Programmable SMS](https://www.twilio.com/sms) API and the [Pusher](https://pusher.com) API. A Twilio account is required (a trial account is sufficient) as is a Pusher account and application (all configured in the .env configuration file.) 
 
