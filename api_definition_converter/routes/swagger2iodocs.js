@@ -279,7 +279,7 @@ router.post('/', function(req, res) {
             //console.log(JSON.stringify(definitions[def], null, 2));
         }
 
-        //console.log("# of paths: " + Object.keys(swaggerDoc.paths).length);
+        console.log("# of paths: " + Object.keys(swaggerDoc.paths).length);
         for (var p in swaggerDoc.paths) {
             if (p.length > 0) {
                 cleanPath = (p.indexOf('/') === 0 ? p.substring(1) : p)
@@ -287,6 +287,7 @@ router.post('/', function(req, res) {
                     .replace(/{[A-Za-z0-9_]+}/g, "")
                     .replace(/\s\s/g, ' ')
                     .replace(/_/g, ' ').trim();
+                console.log("Path: " + cleanPath);
 
                 // supported HTTP verbs and methods
                 httpMethods = [];
@@ -303,11 +304,14 @@ router.post('/', function(req, res) {
                     for (var key in keys) {
                         if (key >= 0) {
                             var keyName = keys[key].toString().toLowerCase();
-                            //console.log("   Key: %s", keyName);
+                            console.log("   Method: %s", keyName);
                             httpMethods.push(keyName);
                             var opId = swaggerDoc.paths[p][keyName].operationId ?
                                 swaggerDoc.paths[p][keyName].operationId :
-                                cleanPath;
+                                (keyName === "get" ? "list " :
+                                    (keyName === "post" ? "create " :
+                                        (keyName === "put" ? "update " : "delete "))) + cleanPath;
+                            console.log("   Operation: " + opId);
                             
                             methods[cleanPath][opId] = {
                                 description: swaggerDoc.paths[p][keyName].summary,
