@@ -222,7 +222,7 @@ router.post('/', function (req, res) {
                             }
                         }
 
-                        // TODO: process nested <resource> element
+                        // process nested <resource> element
                         var nested = resource.child('resource');
                         if (undefined !== nested) {
                             nested.each(function(nResource, index) {
