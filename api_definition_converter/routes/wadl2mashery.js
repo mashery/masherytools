@@ -222,6 +222,15 @@ router.post('/', function (req, res) {
                             }
                         }
 
+                        // process nested <resource> element
+                        var nested = resource.child('resource');
+                        if (undefined !== nested) {
+                            nested.each(function(nResource, index) {
+                                var nPath = nResource.attribute('path').toString();
+                                targetUrl += nPath;
+                            });
+                        }
+
                         // process unique target URLs only
                         if (addresses.indexOf(targetUrl) === -1) {
                             addresses.push(targetUrl);

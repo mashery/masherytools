@@ -12,8 +12,8 @@ Node.js v4.4.3 or later
 ## Installation
 Post clone of repository, change into the api_definition_converter directory and perform the following commands/steps:
 
-* npm install
-* cp credentials.js.sample credentials.js and update to reflect your Mashery area information and V3 API key information.
+* ```npm install```
+* ```cp credentials.js.sample credentials.js``` and update to reflect your Mashery area information and V3 API key information.
 
 ## Usage
 
@@ -28,6 +28,16 @@ Navigate to [http://localhost:3000](http://localhost:3000)
 **Note:** Target domains _must_ be whitelisted before any of these tools are used, or the endpoint creation will fail.
 
 ## The Tools
+
+### API Key Notification
+
+This tool listens to Mashery Event Triggers (after key create/update/delete) and sends a text message to the key owner and an administrator about the key status. The UI allows the user to manually send an SMS notification to the owner of an API key about the key's status.
+
+**Note:** The demo uses the [Twilio Programmable SMS](https://www.twilio.com/sms) API and the [Pusher](https://pusher.com) API. A Twilio account is required (a trial account is sufficient) as is a Pusher account and application (all configured in the .env configuration file.) 
+
+![Copy API](/../screenshots/KeyList.png?raw=true "API Keys")
+
+![Copy API](/../screenshots/KeyNotify.png?raw=true "API Key Notification")
 
 ### Copy API
 
