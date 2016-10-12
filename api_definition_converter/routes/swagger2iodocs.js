@@ -274,9 +274,15 @@ router.post('/', function(req, res) {
 
         // make a copy of the schema definitions section to force required for sample generation
         var definitions = JSON.parse(JSON.stringify(swaggerDoc.definitions));
-        for (var def in definitions) {
-            definitions[def].required = Object.keys(definitions[def].properties);
-            //console.log(JSON.stringify(definitions[def], null, 2));
+        var cleanDefs = _.mapKeys(definitions, function(value, key) {
+            return key.replace(/»/g, "").replace(/«/g, "");
+        });
+        for (var def in cleanDefs) {
+            var props = cleanDefs[def].properties;
+            if (props && props.length > 0) {
+                cleanDefs[def].required = Object.keys(cleanDefs[def].properties);
+                //console.log(JSON.stringify(definitions[def], null, 2));
+            }
         }
 
         console.log("# of paths: " + Object.keys(swaggerDoc.paths).length);
@@ -285,6 +291,7 @@ router.post('/', function(req, res) {
                 cleanPath = (p.indexOf('/') === 0 ? p.substring(1) : p)
                     .replace(/\//g, ' ')
                     .replace(/{[A-Za-z0-9_]+}/g, "")
+                    .replace(/{\?[A-Za-z0-9_,]+}/g, "")
                     .replace(/\s\s/g, ' ')
                     .replace(/_/g, ' ').trim();
                 console.log("Path: " + cleanPath);
@@ -316,7 +323,7 @@ router.post('/', function(req, res) {
                             methods[cleanPath][opId] = {
                                 description: swaggerDoc.paths[p][keyName].summary,
                                 httpMethod: keyName.toUpperCase(),
-                                path: p,
+                                path: p.replace(/{\?[A-Za-z0-9_,]+}/g, ""),
                                 parameters: {}
                             };
 
@@ -363,8 +370,9 @@ router.post('/', function(req, res) {
                                                 if (oParam.schema['$ref']) {
                                                     var ref = oParam.schema['$ref'].split('/');
                                                     var schemaName = ref[ref.length - 1];
+                                                    console.log("   Referenced schema name: %s", schemaName);
 
-                                                    var oSchema = swaggerDoc.definitions[schemaName];
+                                                    var oSchema = cleanDefs[schemaName];
                                                     if (undefined != oSchema) {
                                                         //console.log("Schema object: %s", JSON.stringify(oSchema, null, 3));
                                                         iodocsDef.schemas[schemaName] = oSchema;
@@ -420,15 +428,17 @@ router.post('/', function(req, res) {
                                         var respSchema = swaggerDoc.paths[p][keyName].responses["200"].schema;
                                         var schemaRef;
                                         if (respSchema) {
-                                            schemaRef = respSchema['$ref'];//swaggerDoc.paths[p][keyName].responses["200"].schema['$ref'];
+                                            schemaRef = respSchema['$ref'].replace(/»/g, "").replace(/«/g, "");//swaggerDoc.paths[p][keyName].responses["200"].schema['$ref'];
                                         }
                                         if (undefined != schemaRef) {
                                             var ref = schemaRef.split('/');
                                             var schemaName = ref[ref.length - 1];
-                                            var schemaObj = JSON.parse(JSON.stringify(swaggerDoc.definitions[schemaName]));
+                                            var schemaObj = JSON.parse(JSON.stringify(cleanDefs[schemaName]));
                                             //var schemaObj = definitions[schemaName];
                                             schemaObj.required = Object.keys(schemaObj.properties);
-                                            schemaObj.definitions = definitions; //swaggerDoc.definitions;
+                                            //schemaObj.definitions = definitions; //swaggerDoc.definitions;
+                                            schemaObj.definitions = cleanDefs; //swaggerDoc.definitions;
+                                            console.log(JSON.stringify(schemaObj, null, 2));
                                             try {
                                                 var sample = jsf(schemaObj);
                                             } catch (e) {
@@ -457,7 +467,8 @@ router.post('/', function(req, res) {
                                                 var schemaObj = JSON.parse(JSON.stringify(swaggerDoc.definitions[schemaName]));
                                                 //var schemaObj = definitions[schemaName];
                                                 schemaObj.required = Object.keys(schemaObj.properties);
-                                                schemaObj.definitions = definitions; //swaggerDoc.definitions;
+                                                //schemaObj.definitions = definitions; //swaggerDoc.definitions;
+                                                schemaObj.definitions = cleanDefs; //swaggerDoc.definitions;
                                                 try {
                                                     var sample = jsf(schemaObj);
                                                 } catch (e) {
@@ -492,8 +503,8 @@ router.post('/', function(req, res) {
         } // end for p in paths
 
         // add any missing schema items
-        for (var def in swaggerDoc.definitions) {
-            var oDef = swaggerDoc.definitions[def];
+        for (var def in cleanDefs) {
+            var oDef = cleanDefs[def];
             if (!iodocsDef.schemas[def]) {
                 iodocsDef.schemas[def] = oDef;
             }
