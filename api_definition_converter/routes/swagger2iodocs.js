@@ -428,7 +428,13 @@ router.post('/', function(req, res) {
                                         var respSchema = swaggerDoc.paths[p][keyName].responses["200"].schema;
                                         var schemaRef;
                                         if (respSchema) {
-                                            schemaRef = respSchema['$ref'].replace(/»/g, "").replace(/«/g, "");//swaggerDoc.paths[p][keyName].responses["200"].schema['$ref'];
+                                            if (undefined != respSchema['$ref']) {
+                                                schemaRef = respSchema['$ref'].replace(/»/g, "").replace(/«/g, "");//swaggerDoc.paths[p][keyName].responses["200"].schema['$ref'];
+                                            } else {
+                                                if (undefined != respSchema.items['$ref']) {
+                                                    schemaRef = respSchema.items['$ref'].replace(/»/g, "").replace(/«/g, "");//swaggerDoc.paths[p][keyName].responses["200"].schema['$ref'];
+                                                }
+                                            }
                                         }
                                         if (undefined != schemaRef) {
                                             var ref = schemaRef.split('/');
