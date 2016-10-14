@@ -275,25 +275,10 @@ router.post('/', function(req, res) {
         // make a copy of the schema definitions section to force required for sample generation
         var definitions = JSON.parse(JSON.stringify(swaggerDoc.definitions));
         var cleanDefKeys = _.mapKeys(definitions, function(value, key) {
-            return key.replace(/»/g, "").replace(/«/g, "");
+            return key.replace(/[»«]/g, "");
         });
-        
-        // TODO: replace with one reursive function
-        cleanDefs = _.mapValues(cleanDefKeys, function (v1) { //properties
-            return typeof v1 === "string" ? v1.replace(/»/g, "").replace(/«/g, "") :
-                _.mapValues(v1, function (v2) { //validationErrors
-                    return typeof v2 === "string" ? v2.replace(/»/g, "").replace(/«/g, "") :
-                        _.mapValues(v2, function (v3) {
-                            return typeof v3 === "string" ? v3.replace(/»/g, "").replace(/«/g, "") :
-                                _.mapValues(v3, function (v4) {
-                                    return typeof v4 === "string" ? v4.replace(/»/g, "").replace(/«/g, "") :
-                                        _.mapValues(v4, function (v5) {
-                                            return typeof v5 === "string" ? v5.replace(/»/g, "").replace(/«/g, "") : v5;
-                                        });
-                                });
-                        });
-                });
-        });
+
+        cleanDefs = mapValuesAscii(cleanDefKeys);
         for (var def in cleanDefs) {
             var props = cleanDefs[def].properties;
             if (props && props.length > 0) {
@@ -447,10 +432,10 @@ router.post('/', function(req, res) {
                                         var schemaRef;
                                         if (respSchema) {
                                             if (undefined != respSchema['$ref']) {
-                                                schemaRef = respSchema['$ref'].replace(/»/g, "").replace(/«/g, "");//swaggerDoc.paths[p][keyName].responses["200"].schema['$ref'];
+                                                schemaRef = respSchema['$ref'].replace(/[»«]/g, "");//swaggerDoc.paths[p][keyName].responses["200"].schema['$ref'];
                                             } else {
                                                 if (respSchema.items && undefined != respSchema.items['$ref']) {
-                                                    schemaRef = respSchema.items['$ref'].replace(/»/g, "").replace(/«/g, "");//swaggerDoc.paths[p][keyName].responses["200"].schema['$ref'];
+                                                    schemaRef = respSchema.items['$ref'].replace(/[»«]/g, "");//swaggerDoc.paths[p][keyName].responses["200"].schema['$ref'];
                                                 }
                                             }
                                         }
@@ -608,6 +593,15 @@ router.post('/', function(req, res) {
  *********************/
 var printJson = function(obj) {
     JSON.stringify(obj, null, 2);
+};
+
+/*******************************
+ * Recursive mapValues wrapper *
+ *******************************/
+var mapValuesAscii = function(obj) {
+    return _.mapValues(obj, function(value) {
+        return typeof value === "string" ? value.replace(/[»«]/g, "") : mapValuesAscii(value);
+    });
 };
 
 module.exports = router;
