@@ -18,7 +18,7 @@ var log = bunyan.createLogger({
         res: bunyan.stdSerializers.res,
         err: bunyan.stdSerializers.err
     },
-    level : bunyan.DEBUG
+    level : bunyan.INFO    // TODO: change this to DEBUG if needed
 });
 
 var multer = require('multer');
@@ -119,9 +119,8 @@ router.post('/', function(req, res) {
 
                     response.on('end', function () {
                         try {
-                            //console.log(json);
                             swaggerDoc = JSON.parse(json);
-                            //console.log(JSON.stringify(swaggerDoc, null, 2));
+                            log.debug(JSON.stringify(swaggerDoc, null, 2));
                         } catch (e) {
                             errorMsg = "Unable to parse Swagger from " + swaggerUrl;
                         }
@@ -175,7 +174,8 @@ router.post('/', function(req, res) {
 
 
             apiClient.methods.fetchAllServices(svcArgs, function (serviceList, serviceRawResponse) {
-                //console.log(serviceList);
+                log.debug(serviceList);
+
                 if (serviceList.length === 0 && !printOnly) {
                     // not found
                     log.info("API definition '" + apiName + "' not found'");
@@ -274,18 +274,35 @@ router.post('/', function(req, res) {
 
         // make a copy of the schema definitions section to force required for sample generation
         var definitions = JSON.parse(JSON.stringify(swaggerDoc.definitions));
-        var cleanDefs = _.mapKeys(definitions, function(value, key) {
+        var cleanDefKeys = _.mapKeys(definitions, function(value, key) {
             return key.replace(/»/g, "").replace(/«/g, "");
+        });
+        
+        // TODO: replace with one reursive function
+        cleanDefs = _.mapValues(cleanDefKeys, function (v1) { //properties
+            return typeof v1 === "string" ? v1.replace(/»/g, "").replace(/«/g, "") :
+                _.mapValues(v1, function (v2) { //validationErrors
+                    return typeof v2 === "string" ? v2.replace(/»/g, "").replace(/«/g, "") :
+                        _.mapValues(v2, function (v3) {
+                            return typeof v3 === "string" ? v3.replace(/»/g, "").replace(/«/g, "") :
+                                _.mapValues(v3, function (v4) {
+                                    return typeof v4 === "string" ? v4.replace(/»/g, "").replace(/«/g, "") :
+                                        _.mapValues(v4, function (v5) {
+                                            return typeof v5 === "string" ? v5.replace(/»/g, "").replace(/«/g, "") : v5;
+                                        });
+                                });
+                        });
+                });
         });
         for (var def in cleanDefs) {
             var props = cleanDefs[def].properties;
             if (props && props.length > 0) {
                 cleanDefs[def].required = Object.keys(cleanDefs[def].properties);
-                //console.log(JSON.stringify(definitions[def], null, 2));
+                log.debug(JSON.stringify(cleanDefs[def], null, 2));
             }
         }
 
-        console.log("# of paths: " + Object.keys(swaggerDoc.paths).length);
+        log.debug("# of paths: " + Object.keys(swaggerDoc.paths).length);
         for (var p in swaggerDoc.paths) {
             if (p.length > 0) {
                 cleanPath = (p.indexOf('/') === 0 ? p.substring(1) : p)
@@ -294,31 +311,32 @@ router.post('/', function(req, res) {
                     .replace(/{\?[A-Za-z0-9_,]+}/g, "")
                     .replace(/\s\s/g, ' ')
                     .replace(/_/g, ' ').trim();
-                console.log("Path: " + cleanPath);
+                log.debug("Path: " + cleanPath);
 
                 // supported HTTP verbs and methods
                 httpMethods = [];
                 if (methods[cleanPath]) {
                 	// merge similar base paths, e.g., "/Pet" and "/Pet/{petId}"
-                    //console.log("Duplicate path");
+                    log.warn("Duplicate path");
                 } else {
                     methods[cleanPath] = {};
                 }
                 var oPath = swaggerDoc.paths[p];
-                //console.log("Path: %s", p);
+                log.debug("Path: %s", p);
+
                 var keys = Object.keys(oPath);
                 if ( 'undefined' !== keys && Array.isArray(keys) ) {
                     for (var key in keys) {
                         if (key >= 0) {
                             var keyName = keys[key].toString().toLowerCase();
-                            console.log("   Method: %s", keyName);
+                            log.debug("   Method: %s", keyName);
                             httpMethods.push(keyName);
                             var opId = swaggerDoc.paths[p][keyName].operationId ?
                                 swaggerDoc.paths[p][keyName].operationId :
                                 (keyName === "get" ? "list " :
                                     (keyName === "post" ? "create " :
                                         (keyName === "put" ? "update " : "delete "))) + cleanPath;
-                            console.log("   Operation: " + opId);
+                            log.debug("   Operation: " + opId);
                             
                             methods[cleanPath][opId] = {
                                 description: swaggerDoc.paths[p][keyName].summary,
@@ -367,14 +385,15 @@ router.post('/', function(req, res) {
                                     switch (oParam.in) {
                                         case 'body':
                                             if (oParam.schema) {
-                                                if (oParam.schema['$ref']) {
+                                                if (undefined != oParam.schema['$ref']) {
                                                     var ref = oParam.schema['$ref'].split('/');
                                                     var schemaName = ref[ref.length - 1];
-                                                    console.log("   Referenced schema name: %s", schemaName);
+                                                    log.debug("   Referenced schema name: %s", schemaName);
 
                                                     var oSchema = cleanDefs[schemaName];
                                                     if (undefined != oSchema) {
-                                                        //console.log("Schema object: %s", JSON.stringify(oSchema, null, 3));
+                                                        log.debug("Schema object: %s", JSON.stringify(oSchema, null, 3));
+
                                                         iodocsDef.schemas[schemaName] = oSchema;
                                                         methods[cleanPath][opId]['request'] = {
                                                             $ref: schemaName
@@ -382,7 +401,7 @@ router.post('/', function(req, res) {
                                                     }
                                                 } else {
                                                     log.info("TODO: figure out how to do this without defining a 'wrapper' schema object");
-                                                    if (oParam.schema.type && oParam.schema.type === 'array' && oParam.schema.items) {
+                                                    if (oParam.schema.type && oParam.schema.type === 'array' && oParam.schema.items && undefined != oParam.schema.items['$ref']) {
                                                         methods[cleanPath][opId]['parameters'][oParam.name] = {
                                                             description: oParam.description,
                                                             required: oParam.required,
@@ -424,14 +443,13 @@ router.post('/', function(req, res) {
                                 // add sample field
                                 if (genRespSample) {
                                     if (swaggerDoc.paths[p][keyName].responses["200"]) {
-                                        //console.log("Found 200 response for %s", p);
                                         var respSchema = swaggerDoc.paths[p][keyName].responses["200"].schema;
                                         var schemaRef;
                                         if (respSchema) {
                                             if (undefined != respSchema['$ref']) {
                                                 schemaRef = respSchema['$ref'].replace(/»/g, "").replace(/«/g, "");//swaggerDoc.paths[p][keyName].responses["200"].schema['$ref'];
                                             } else {
-                                                if (undefined != respSchema.items['$ref']) {
+                                                if (respSchema.items && undefined != respSchema.items['$ref']) {
                                                     schemaRef = respSchema.items['$ref'].replace(/»/g, "").replace(/«/g, "");//swaggerDoc.paths[p][keyName].responses["200"].schema['$ref'];
                                                 }
                                             }
@@ -444,12 +462,13 @@ router.post('/', function(req, res) {
                                             schemaObj.required = Object.keys(schemaObj.properties);
                                             //schemaObj.definitions = definitions; //swaggerDoc.definitions;
                                             schemaObj.definitions = cleanDefs; //swaggerDoc.definitions;
-                                            console.log(JSON.stringify(schemaObj, null, 2));
+                                            log.debug(JSON.stringify(schemaObj, null, 2));
+
                                             try {
                                                 var sample = jsf(schemaObj);
                                             } catch (e) {
-                                                console.error("Sample generation failed for %s", p);
-                                                console.error(e.message);
+                                                log.error("Sample generation failed for %s", cleanPath);
+                                                log.error(e.message);
                                             }
                                             if (sample) {
                                                 methods[cleanPath][opId]['parameters']['response_sample'] = {
@@ -478,8 +497,8 @@ router.post('/', function(req, res) {
                                                 try {
                                                     var sample = jsf(schemaObj);
                                                 } catch (e) {
-                                                    console.error("Sample array generation failed for %s", p);
-                                                    console.error(e.message);
+                                                    log.error("Sample array generation failed for %s", p);
+                                                    log.error(e.message);
                                                 }
                                                 if (sample) {
                                                     //console.log(JSON.stringify(sample, 2, null));
@@ -535,7 +554,7 @@ router.post('/', function(req, res) {
                     }
                 };
                 renderTimeout = Object.keys(swaggerDoc.paths).length * 1000;
-                //console.log("Render timeout: " + renderTimeout);
+                log.debug("Render timeout: " + renderTimeout);
 
                 if (ioDocDef.errorCode && ioDocDef.errorCode === 404) {
                     // create a new IO Docs definition
