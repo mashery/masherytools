@@ -9,6 +9,17 @@ var fs = require('fs');	  // File system
 var path = require('path');  // Directory
 var mashery = require('mashery');
 
+var bunyan = require('bunyan');
+var log = bunyan.createLogger({
+    name: 'swagger2iodocs',
+    serializers: {
+        req: bunyan.stdSerializers.req,
+        res: bunyan.stdSerializers.res,
+        err: bunyan.stdSerializers.err
+    },
+    level : bunyan.DEBUG
+});
+
 var multer = require('multer');
 router.use(multer({storage: multer.memoryStorage(), inMemory:true}).single('input_file'));
 
@@ -175,7 +186,7 @@ router.post('/', function(req, res) {
 
             if (!printOnly) {
                 apiClient.methods.createService(svcArgs, function (serviceData, serviceRawResponse) {
-                    //console.log(serviceData);
+                    log.debug(serviceData);
                     apiId = serviceData.id;
                     apiName = serviceData.name;
                     if (swaggerDoc.apis) { // Swagger 1.2
@@ -209,7 +220,7 @@ router.post('/', function(req, res) {
                 tgtUuids: mashery_area_uuids
             });
         }
-    }, 10000);
+    }, 5000);
 
     /**************************
      * check domain whitelist *
@@ -244,7 +255,7 @@ router.post('/', function(req, res) {
      *************************/
     var endpoints = [];
     var createEndpoint = function(epArgs) {
-        //console.log(printJson(epArgs));
+        //printJson(epArgs);
         apiClient.methods.createServiceEndpoint(epArgs, function(epData, epRawResponse) {
             if (epData.errorCode && epData.errorCode === 400 &&
                 epData.errors && epData.errors.length > 0) {
@@ -398,6 +409,7 @@ router.post('/', function(req, res) {
      * Process Swagger 2.0 *
      ***********************/
     var processSwagger20 = function(swaggerDoc, apiId, basePath) {
+        log.debug("Inside processSwagger20");
         var epArgs;
         var httpMethods = [];
         var methods = [];
@@ -416,7 +428,7 @@ router.post('/', function(req, res) {
         }
 
         ep = 0;
-        //console.log("# of paths: " + Object.keys(swaggerDoc.paths).length);
+        log.debug("# of paths: " + Object.keys(swaggerDoc.paths).length);
         for (var p in swaggerDoc.paths) {
             if (p.length > 0) {
                 // supported HTTP verbs and methods
@@ -441,6 +453,7 @@ router.post('/', function(req, res) {
                 cleanPath = (p.indexOf('/') === 0 ? p.substring(1) : p)
                     .replace(/\//g, ' ')
                     .replace(/{[A-Za-z0-9_]+}/g, "")
+                    .replace(/{\?[A-Za-z0-9_,]+}/g, "")
                     .replace(/\s\s/g, ' ')
                     .replace(/_/g, ' ').trim();
                 
@@ -501,14 +514,14 @@ router.post('/', function(req, res) {
                     path: { serviceId: apiId },
                     data: {
                         "name": cleanPath,
-                        "outboundRequestTargetPath": (basePath.pathname + p).replace("//", "/"),
+                        "outboundRequestTargetPath": (basePath.pathname + p).replace("//", "/").replace(/{\?[A-Za-z0-9_,]+}/g, ""),
                         "outboundTransportProtocol": basePath.protocol === 'https:' ? 'https' : 'http',
                         "supportedHttpMethods" : httpMethods,
                         "methods": methods,
                         "publicDomains": [{
                             "address": trafficManagerHost
                         }],
-                        "requestPathAlias": p,//(basePath.pathname + p).replace("//", "/"),
+                        "requestPathAlias": p.replace(/{\?[A-Za-z0-9_,]+}/g, ""),//(basePath.pathname + p).replace("//", "/"),
                         "systemDomains": [{
                             "address": basePath.host
                         }],
@@ -518,7 +531,8 @@ router.post('/', function(req, res) {
 
                 //console.log(epArgs);
                 if (!printOnly) {
-                    setTimeout(createEndpoint, (ep+2)*1000, epArgs);
+                    setTimeout(createEndpoint, (ep+2)*5000, epArgs);
+                    log.debug("Endpoint " + ep + " will be created in " + ((ep+2)*5) + " seconds");
                 } else {
                     endpoints.push(epArgs.data.name);
                 }
@@ -536,7 +550,7 @@ router.post('/', function(req, res) {
      * Render output *
      ***********************/
     var renderOutput = function() {
-        console.log("# of endpoints: %", endpoints.length);
+        console.log("# of endpoints: %d", endpoints.length);
         var wlMulti;
         if (whitelist.length > 1) {
             wlMulti = "true";
@@ -568,7 +582,7 @@ router.post('/', function(req, res) {
  * Pretty print JSON *
  *********************/
 var printJson = function(obj) {
-    JSON.stringify(obj, null, 2);
+    console.log(JSON.stringify(obj, null, 2));
 };
 
 module.exports = router;
