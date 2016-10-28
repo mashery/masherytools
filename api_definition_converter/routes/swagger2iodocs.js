@@ -1,15 +1,15 @@
 var express = require('express');
 var router = express.Router();
 
-var http  = require('http');  // HTTP client
-var https = require('https'); // HTTP client
-var url = require('url');	  // URL parser
-var fs = require('fs');	  // File system
-var path = require('path');  // Directory
-var mashery = require('mashery');
-var _ = require('lodash');
-var jsf = require('json-schema-faker');
-var bunyan = require('bunyan');
+var http    = require('http');    // HTTP client
+var https   = require('https');   // HTTP client
+var url     = require('url');	  // URL parser
+var fs      = require('fs');	  // File system
+var path    = require('path');    // Directory
+var mashery = require('mashery'); // V3 API
+var _       = require('lodash');  // Utility
+var jsf     = require('json-schema-faker'); // object generation
+var bunyan  = require('bunyan');  // Logging
 
 var log = bunyan.createLogger({
     name: 'swagger2iodocs',
@@ -50,11 +50,11 @@ router.post('/', function(req, res) {
     process.on('uncaughtException', function(err) {
         errorMsg = err ? err.message : "Unknown exception caught";
         res.render('swagger2iodocs', {
-            title: 'Swagger2IODocs',
+            title:       'Swagger2IODocs',
             description: description,
-            error: errorMsg,
-            tgtUuid: mashery_area_uuids[0].uuid,
-            tgtUuids: mashery_area_uuids
+            error:       errorMsg,
+            tgtUuid:     mashery_area_uuids[0].uuid,
+            tgtUuids:    mashery_area_uuids
         });
     });
 
@@ -62,10 +62,10 @@ router.post('/', function(req, res) {
      * initialize the API client *
      *****************************/
     var apiClient = mashery.init({
-        user: mashery_user_id,
-        pass: mashery_password,
-        key: mashery_api_key,
-        secret: mashery_api_key_secret,
+        user:     mashery_user_id,
+        pass:     mashery_password,
+        key:      mashery_api_key,
+        secret:   mashery_api_key_secret,
         areaUuid: req.body.tgt_uuid ? req.body.tgt_uuid : mashery_area_uuids[0].uuid
     });
 
@@ -152,12 +152,12 @@ router.post('/', function(req, res) {
             if (!host) {
                 errorMsg = "Invalid Swagger document:<br><pre>" + printJson(swaggerDoc) + "</pre>";
                 res.render('swagger2iodocs', {
-                    title: 'Swagger2IODocs',
+                    title:       'Swagger2IODocs',
                     description: description,
-                    error: errorMsg,
-                    warn: warnMsg,
-                    tgtUuid: mashery_area_uuids[0].uuid,
-                    tgtUuids: mashery_area_uuids
+                    error:       errorMsg,
+                    warn:        warnMsg,
+                    tgtUuid:     mashery_area_uuids[0].uuid,
+                    tgtUuids:    mashery_area_uuids
                 });
                 return;
             }
@@ -180,12 +180,13 @@ router.post('/', function(req, res) {
                     // not found
                     log.info("API definition '" + apiName + "' not found'");
                     res.render('swagger2iodocs', {
-                        title: 'Swagger2IODocs',
+                        title:       'Swagger2IODocs',
                         description: description,
-                        error: errorMsg ? errorMsg : "API definition '" + apiName + "' not found",
-                        warn: warnMsg? warnMsg : "Use Swagger2Mashery to create the API definition before generating IODocs",
-                        tgtUuid: mashery_area_uuids[0].uuid,
-                        tgtUuids: mashery_area_uuids
+                        error:       errorMsg ? errorMsg : "API definition '" + apiName + "' not found",
+                        warn:        warnMsg ? warnMsg :
+                                        "Use Swagger2Mashery to create the API definition before generating IODocs",
+                        tgtUuid:     mashery_area_uuids[0].uuid,
+                        tgtUuids:    mashery_area_uuids
                     });
                     return;
                 } else {
@@ -197,12 +198,13 @@ router.post('/', function(req, res) {
                             // more than one match
                             log.info("Multiple APIs named '" + apiName + "' found");
                             res.render('swagger2iodocs', {
-                                title: 'Swagger2IODocs',
+                                title:       'Swagger2IODocs',
                                 description: description,
-                                error: errorMsg ? errorMsg : "Multiple API definitions named '" + apiName + "' found",
-                                warn: warnMsg,
-                                tgtUuid: mashery_area_uuids[0].uuid,
-                                tgtUuids: mashery_area_uuids
+                                error:       errorMsg ? errorMsg :
+                                                "Multiple API definitions named '" + apiName + "' found",
+                                warn:        warnMsg,
+                                tgtUuid:     mashery_area_uuids[0].uuid,
+                                tgtUuids:    mashery_area_uuids
                             });
                             return;
                         }
@@ -218,12 +220,12 @@ router.post('/', function(req, res) {
             });
         } else {
             res.render('swagger2iodocs', {
-                title: 'Swagger2IODocs',
+                title:       'Swagger2IODocs',
                 description: description,
-                error: errorMsg ? errorMsg : "Unable to process Swagger",
-                warn: warnMsg,
-                tgtUuid: mashery_area_uuids[0].uuid,
-                tgtUuids: mashery_area_uuids
+                error:       errorMsg ? errorMsg : "Unable to process Swagger",
+                warn:        warnMsg,
+                tgtUuid:     mashery_area_uuids[0].uuid,
+                tgtUuids:    mashery_area_uuids
             });
         }
     }, 10000);
@@ -254,6 +256,8 @@ router.post('/', function(req, res) {
         var methods = {};
         var ep;
         var cleanPath = '';
+        var methodTag = '';
+        var tags = swaggerDoc.tags || [];
 
         // Swagger 2.0 validation - optional as BW6.2 generates Swagger 1.2 definitions, and BW6.3 generates Swagger 2.0
         var swaggerVer = swaggerDoc.swagger ? swaggerDoc.swagger : swaggerDoc.swaggerVersion;
@@ -290,24 +294,19 @@ router.post('/', function(req, res) {
         log.debug("# of paths: " + Object.keys(swaggerDoc.paths).length);
         for (var p in swaggerDoc.paths) {
             if (p.length > 0) {
+                var oPath = swaggerDoc.paths[p];
+                log.debug("Path: %s", p);
+
                 cleanPath = (p.indexOf('/') === 0 ? p.substring(1) : p)
                     .replace(/\//g, ' ')
                     .replace(/{[A-Za-z0-9_]+}/g, "")
                     .replace(/{\?[A-Za-z0-9_,]+}/g, "")
                     .replace(/\s\s/g, ' ')
                     .replace(/_/g, ' ').trim();
-                log.debug("Path: " + cleanPath);
+                log.debug("Clean path: " + cleanPath);
 
                 // supported HTTP verbs and methods
                 httpMethods = [];
-                if (methods[cleanPath]) {
-                	// merge similar base paths, e.g., "/Pet" and "/Pet/{petId}"
-                    log.warn("Duplicate path");
-                } else {
-                    methods[cleanPath] = {};
-                }
-                var oPath = swaggerDoc.paths[p];
-                log.debug("Path: %s", p);
 
                 var keys = Object.keys(oPath);
                 if ( 'undefined' !== keys && Array.isArray(keys) ) {
@@ -316,6 +315,18 @@ router.post('/', function(req, res) {
                             var keyName = keys[key].toString().toLowerCase();
                             log.debug("   Method: %s", keyName);
                             httpMethods.push(keyName);
+
+                            methodTag = tags.filter(function(tag) {
+                                return tag.name == swaggerDoc.paths[p][keyName].tags[0];
+                            })[0].description || cleanPath;
+
+                            if (methods[methodTag]) {
+                                // merge similar base paths, e.g., "/Pet" and "/Pet/{petId}"
+                                log.warn("Duplicate path");
+                            } else {
+                                methods[methodTag] = {};
+                            }
+
                             var opId = swaggerDoc.paths[p][keyName].operationId ?
                                 swaggerDoc.paths[p][keyName].operationId :
                                 (keyName === "get" ? "list " :
@@ -323,7 +334,7 @@ router.post('/', function(req, res) {
                                         (keyName === "put" ? "update " : "delete "))) + cleanPath;
                             log.debug("   Operation: " + opId);
                             
-                            methods[cleanPath][opId] = {
+                            methods[methodTag][opId] = {
                                 description: swaggerDoc.paths[p][keyName].summary,
                                 httpMethod: keyName.toUpperCase(),
                                 path: p.replace(/{\?[A-Za-z0-9_,]+}/g, ""),
@@ -335,7 +346,7 @@ router.post('/', function(req, res) {
                                 for (var cons in swaggerDoc.paths[p][keyName].consumes) {
                                     ctypeEnum.push(swaggerDoc.paths[p][keyName].consumes[cons]);
                                 }
-                                methods[cleanPath][opId]['parameters']['Content-Type'] = {
+                                methods[methodTag][opId]['parameters']['Content-Type'] = {
                                     description: 'Content type of the request payload',
                                     required: true,
                                     location: 'header',
@@ -356,7 +367,7 @@ router.post('/', function(req, res) {
                                 for (var prod in swaggerDoc.paths[p][keyName].produces) {
                                     acceptEnum.push(swaggerDoc.paths[p][keyName].produces[prod]);
                                 }
-                                methods[cleanPath][opId]['parameters']['Accept'] = {
+                                methods[methodTag][opId]['parameters']['Accept'] = {
                                     description: 'Content type of the response payload',
                                     required: true,
                                     location: 'header',
@@ -380,14 +391,14 @@ router.post('/', function(req, res) {
                                                         log.debug("Schema object: %s", JSON.stringify(oSchema, null, 3));
 
                                                         iodocsDef.schemas[schemaName] = oSchema;
-                                                        methods[cleanPath][opId]['request'] = {
+                                                        methods[methodTag][opId]['request'] = {
                                                             $ref: schemaName
                                                         };
                                                     }
                                                 } else {
                                                     log.info("TODO: figure out how to do this without defining a 'wrapper' schema object");
                                                     if (oParam.schema.type && oParam.schema.type === 'array' && oParam.schema.items && undefined != oParam.schema.items['$ref']) {
-                                                        methods[cleanPath][opId]['parameters'][oParam.name] = {
+                                                        methods[methodTag][opId]['parameters'][oParam.name] = {
                                                             description: oParam.description,
                                                             required: oParam.required,
                                                             type: 'array',
@@ -400,7 +411,7 @@ router.post('/', function(req, res) {
                                             }
                                             break;
                                         case 'query':
-                                            methods[cleanPath][opId]['parameters'][oParam.name] = {
+                                            methods[methodTag][opId]['parameters'][oParam.name] = {
                                                 description: oParam.description,
                                                 required: oParam.required,
                                                 type: oParam.type,
@@ -408,7 +419,7 @@ router.post('/', function(req, res) {
                                             };
                                             break;
                                         case 'path':
-                                            methods[cleanPath][opId]['parameters']['{'+oParam.name+'}'] = {
+                                            methods[methodTag][opId]['parameters']['{'+oParam.name+'}'] = {
                                                 description: oParam.description,
                                                 required: oParam.required,
                                                 type: oParam.type,
@@ -416,7 +427,7 @@ router.post('/', function(req, res) {
                                             };
                                             break;
                                         case 'formData':
-                                            methods[cleanPath][opId]['parameters'][oParam.name] = {
+                                            methods[methodTag][opId]['parameters'][oParam.name] = {
                                                 description: oParam.description,
                                                 required: oParam.required,
                                                 type: oParam.type,
@@ -456,7 +467,7 @@ router.post('/', function(req, res) {
                                                 log.error(e.message);
                                             }
                                             if (sample) {
-                                                methods[cleanPath][opId]['parameters']['response_sample'] = {
+                                                methods[methodTag][opId]['parameters']['response_sample'] = {
                                                     required: false,
                                                     type: 'textarea',
                                                     location: 'empty',
@@ -487,7 +498,7 @@ router.post('/', function(req, res) {
                                                 }
                                                 if (sample) {
                                                     //console.log(JSON.stringify(sample, 2, null));
-                                                    methods[cleanPath][opId]['parameters']['response_sample'] = {
+                                                    methods[methodTag][opId]['parameters']['response_sample'] = {
                                                         required: false,
                                                         type: 'textarea',
                                                         location: 'empty',
@@ -505,8 +516,8 @@ router.post('/', function(req, res) {
                     httpMethods.push(keys.toString().toLowerCase());
                 }
 
-                iodocsDef.resources[cleanPath] = {};
-                iodocsDef.resources[cleanPath]['methods'] = methods[cleanPath];
+                iodocsDef.resources[methodTag] = {};
+                iodocsDef.resources[methodTag]['methods'] = methods[methodTag];
 
                 ep++;
             } // end if p.length > 0
