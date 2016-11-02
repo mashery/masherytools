@@ -21,6 +21,10 @@ From within the api_definition_converter directory, run following command:
 
     node bin/www
 
+To run the application in debug mode, use following command:
+
+    node bin/www | node_modules/bunyan/bin/bunyan
+
 Navigate to [http://localhost:3000](http://localhost:3000)
 
 ![Mashery API Tools](/../screenshots/MasheryTools.png?raw=true "Mashery Tools")
