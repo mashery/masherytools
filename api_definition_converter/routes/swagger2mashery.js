@@ -11,7 +11,7 @@ var mashery = require('mashery');
 
 var bunyan = require('bunyan');
 var log = bunyan.createLogger({
-    name: 'swagger2iodocs',
+    name: 'swagger2mashery',
     serializers: {
         req: bunyan.stdSerializers.req,
         res: bunyan.stdSerializers.res,
