@@ -150,7 +150,8 @@ router.post('/', function(req, res) {
             }
 
             if (!host) {
-                errorMsg = "Invalid Swagger document:<br><pre>" + printJson(swaggerDoc) + "</pre>";
+                errorMsg = "Invalid Swagger document - missing host and/or basePath entries";
+                //errorMsg = "Invalid Swagger document:<br><pre>" + printJson(swaggerDoc) + "</pre>";
                 res.render('swagger2mashery', {
                     title: 'Swagger2Mashery',
                     description: description,
