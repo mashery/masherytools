@@ -120,7 +120,7 @@ router.post('/', function(req, res) {
                     response.on('end', function () {
                         try {
                             swaggerDoc = JSON.parse(json);
-                            log.debug(JSON.stringify(swaggerDoc, null, 2));
+                            //log.debug(JSON.stringify(swaggerDoc, null, 2));
                         } catch (e) {
                             errorMsg = "Unable to parse Swagger from " + swaggerUrl;
                         }
@@ -285,8 +285,13 @@ router.post('/', function(req, res) {
         cleanDefs = mapValuesAscii(cleanDefKeys);
         for (var def in cleanDefs) {
             var props = cleanDefs[def].properties;
-            if (props && props.length > 0) {
+            if (props && Object.keys(props).length > 0) {
                 cleanDefs[def].required = Object.keys(cleanDefs[def].properties);
+                if (undefined == cleanDefs[def].type) {
+                    cleanDefs[def].type = "object";
+                } else {
+                    logger.debug("Schema type: " + cleanDefs[def].type);
+                }
                 log.debug(JSON.stringify(cleanDefs[def], null, 2));
             }
         }
@@ -396,7 +401,6 @@ router.post('/', function(req, res) {
                                                         };
                                                     }
                                                 } else {
-                                                    log.info("TODO: figure out how to do this without defining a 'wrapper' schema object");
                                                     if (oParam.schema.type && oParam.schema.type === 'array' && oParam.schema.items && undefined != oParam.schema.items['$ref']) {
                                                         methods[methodTag][opId]['parameters'][oParam.name] = {
                                                             description: oParam.description,
