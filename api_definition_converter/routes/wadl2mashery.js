@@ -25,7 +25,7 @@ var multer = require('multer');
 router.use(multer({storage: multer.memoryStorage(), inMemory: true}).single('input_file'));
 
 /* GET home page. */
-router.get('/', function (req, res) {
+router.get('/', require('connect-ensure-login').ensureLoggedIn(), function (req, res) {
     res.render('wadl2mashery', {
         title: 'WADL2Mashery',
         description: description,
@@ -34,7 +34,7 @@ router.get('/', function (req, res) {
     });
 });
 
-router.post('/', function (req, res) {
+router.post('/', require('connect-ensure-login').ensureLoggedIn(), function (req, res) {
     /************************
      * Global error handler *
      ************************/
