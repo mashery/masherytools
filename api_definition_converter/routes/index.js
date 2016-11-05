@@ -1,11 +1,10 @@
 var express = require('express');
-var passport = require('passport');
 var router = express.Router();
 
 var path = require('path');  // Directory
 
 /* GET home page. */
-router.get('/', require('connect-ensure-login').ensureLoggedIn(), function (req, res) {
+router.get('/', function (req, res) {
     var config = require(path.join(__dirname, '..', 'config.js'));
     var sorted_tools = mashery_tools.sort(function (a, b) {
         if (a.name > b.name) {
@@ -19,8 +18,7 @@ router.get('/', require('connect-ensure-login').ensureLoggedIn(), function (req,
     });
     res.render('index', {
         title: 'Mashery Tools',
-        tools: sorted_tools,
-        user: req.user
+        tools: sorted_tools
     });
 });
 
