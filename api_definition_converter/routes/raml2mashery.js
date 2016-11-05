@@ -27,7 +27,7 @@ var description = mashery_tools.filter(function(item) {
 })[0].description;
 
 /* GET home page. */
-router.get('/', function (req, res) {
+router.get('/', require('connect-ensure-login').ensureLoggedIn(), function (req, res) {
     res.render('raml2mashery', {
         title: 'RAML2Mashery',
         description: description,
@@ -36,7 +36,7 @@ router.get('/', function (req, res) {
     });
 });
 
-router.post('/', function(req, res) {
+router.post('/', require('connect-ensure-login').ensureLoggedIn(), function (req, res) {
     var errorMsgs = [];
     var warnMsgs = [];
 
