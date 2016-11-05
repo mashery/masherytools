@@ -18,7 +18,7 @@ var log = bunyan.createLogger({
         res: bunyan.stdSerializers.res,
         err: bunyan.stdSerializers.err
     },
-    level : bunyan.INFO    // TODO: change this to DEBUG if needed
+    level : bunyan.DEBUG    // TODO: change this to DEBUG if needed
 });
 
 var multer = require('multer');
@@ -31,7 +31,7 @@ var description = _.filter(mashery_tools, function(item) {
 })[0].description;
 
 /* GET home page. */
-router.get('/', function (req, res) {
+router.get('/', require('connect-ensure-login').ensureLoggedIn(), function (req, res) {
     res.render('swagger2iodocs', {
         title: 'Swagger2IODocs',
         description: description,
@@ -40,7 +40,7 @@ router.get('/', function (req, res) {
     });
 });
 
-router.post('/', function(req, res) {
+router.post('/', require('connect-ensure-login').ensureLoggedIn(), function (req, res) {
     /************************
      * Global error handler *
      ************************/
