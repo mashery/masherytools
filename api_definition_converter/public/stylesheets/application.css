@@ -22,7 +22,18 @@ input.btnRight {
     border: 1px solid #a72726;
 }
 
-input.btnRight:hover {
+input.btnLeft {
+    float: left;
+    cursor: pointer;
+    border: 1px solid #a72726;
+}
+
+input.btnCenter {
+    cursor: pointer;
+    border: 1px solid #a72726;
+}
+
+input.btnRight:hover, input.btnLeft:hover, input.btnCenter:hover {
     background-color: #a72726;
     color: #fff;
 }
@@ -58,4 +69,15 @@ p {
     to {
         width: 1.25em;
     }
+}
+
+.linkbutton {
+    background:none!important;
+    border:none;
+    padding:0!important;
+    text-decoration:underline;
+    cursor:pointer;
+    font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+    font-weight: normal;
+    color: #48802c;
 }
