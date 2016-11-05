@@ -43,7 +43,7 @@ router.get('/', function (req, res) {
 /*********************************
  * POST used in Mashery Tools UI *
  *********************************/
-router.post('/', function(req, res) {
+router.post('/', require('connect-ensure-login').ensureLoggedIn(), function (req, res) {
 
     process.on('uncaughtException', function(err) {
         errorMsg = err ? err.message : "Unknown exception caught";
