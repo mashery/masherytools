@@ -56,7 +56,7 @@ var description = _.filter(mashery_tools, function(item) {
 })[0].description;
 
 /* GET home page. */
-router.get('/', function (req, res) {
+router.get('/', require('connect-ensure-login').ensureLoggedIn(), function (req, res) {
     res.render('apikeys', {
         title: 'API Key Notification',
         description: description,
@@ -65,7 +65,7 @@ router.get('/', function (req, res) {
     });
 });
 
-router.post('/', function(req, res) {
+router.post('/', require('connect-ensure-login').ensureLoggedIn(), function (req, res) {
     /************************
      * Global error handler *
      ************************/
