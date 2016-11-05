@@ -40,7 +40,7 @@ var description = mashery_tools.filter(function(item) {
 })[0].description;
 
 /* GET home page */
-router.get('/', require('connect-ensure-login').ensureLoggedIn(), function (req, res) {
+router.get('/', function (req, res) {
     var creds = require(path.join(__dirname, '..', 'credentials.js'));
 
     res.render('copyapi', {
@@ -57,7 +57,7 @@ router.get('/', require('connect-ensure-login').ensureLoggedIn(), function (req,
     });
 });
 
-router.post('/', require('connect-ensure-login').ensureLoggedIn(), function (req, res) {
+router.post('/', function(req, res) {
     /************************
      * Global error handler *
      ************************/
