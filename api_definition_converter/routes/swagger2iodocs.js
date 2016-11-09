@@ -290,7 +290,7 @@ router.post('/', function(req, res) {
                 if (undefined == cleanDefs[def].type) {
                     cleanDefs[def].type = "object";
                 } else {
-                    logger.debug("Schema type: " + cleanDefs[def].type);
+                    log.debug("Schema type: " + cleanDefs[def].type);
                 }
                 log.debug(JSON.stringify(cleanDefs[def], null, 2));
             }
