@@ -321,9 +321,10 @@ router.post('/', function(req, res) {
                             log.debug("   Method: %s", keyName);
                             httpMethods.push(keyName);
 
-                            methodTag = tags.filter(function(tag) {
+                            var tagObj = tags.filter(function(tag) {
                                 return tag.name == swaggerDoc.paths[p][keyName].tags[0];
-                            })[0].description || cleanPath;
+                            })[0];
+                            methodTag = tagObj ? tagObj.description : cleanPath;
 
                             if (methods[methodTag]) {
                                 // merge similar base paths, e.g., "/Pet" and "/Pet/{petId}"
