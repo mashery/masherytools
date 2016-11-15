@@ -80,6 +80,7 @@ router.post('/', function(req, res) {
     var printOnly = req.body.print_only ? true : false;
     var genRespSample = req.body.gen_resp ? true : false;
     var validateSwagger = req.body.validate_swagger ? true : false;
+    var replaceAccented = req.body.replace_acc ? true : false;
     
     /*******************************
      * Load the Swagger definition *
@@ -545,6 +546,31 @@ router.post('/', function(req, res) {
             apiClient.methods.fetchIODocs(ioArgs, function (ioDocDef, fetchRawResponse) {
                 // cleanup any left-over Swagger schema references
                 var json = JSON.stringify(iodocsDef, null, 3).replace(/#\/definitions\//g, '').trim();
+                if (replaceAccented) {
+                    json = json.
+                        replace(/[âäãáà]+/g, 'a').
+                        replace(/[ÂÄÂÁÀÅ]+/g, 'A').
+                        replace(/[ç]+/g, 'c').
+                        replace(/[Ç]+/g, 'C').
+                        replace(/[êëèé]+/g, 'e').
+                        replace(/[ÊËÉÈ]+/g, 'E').
+                        replace(/[îïíì]+/g, 'i').
+                        replace(/[ÎÏÍÌ]+/g, 'I').
+                        replace(/[ñ]+/g, 'n').
+                        replace(/[Ñ]+/g, 'N').
+                        replace(/[ôöõóò]+/g, 'o').
+                        replace(/[ÔÖÕÓÒ]+/g, 'O').
+                        replace(/[š]+/g, 's').
+                        replace(/[Š]+/g, 'S').
+                        replace(/[ûüúù]+/g, 'u').
+                        replace(/[ÛÜÚÙ]+/g, 'U').
+                        replace(/[ÿý]+/g, 'y').
+                        replace(/[ŸÝ]+/g, 'Y').
+                        replace(/[ž]+/g, 'z').
+                        replace(/[Ž]+/g, 'Z').
+                        replace(/[¿]+/g, '?').
+                        replace(/[¡]+/g, '!');
+                }
                 var definition = JSON.parse(json);
 
                 var ioData = {
