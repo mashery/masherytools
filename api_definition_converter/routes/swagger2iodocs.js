@@ -612,6 +612,31 @@ router.post('/', function(req, res) {
     var renderOutput = function(action) {
         // fix any remaining (nested) schema references
         var json = JSON.stringify(iodocsDef, null, 3).replace(/#\/definitions\//g, '').trim();
+        if (replaceAccented) {
+            json = json.
+                replace(/[âäãáà]+/g, 'a').
+                replace(/[ÂÄÂÁÀÅ]+/g, 'A').
+                replace(/[ç]+/g, 'c').
+                replace(/[Ç]+/g, 'C').
+                replace(/[êëèé]+/g, 'e').
+                replace(/[ÊËÉÈ]+/g, 'E').
+                replace(/[îïíì]+/g, 'i').
+                replace(/[ÎÏÍÌ]+/g, 'I').
+                replace(/[ñ]+/g, 'n').
+                replace(/[Ñ]+/g, 'N').
+                replace(/[ôöõóò]+/g, 'o').
+                replace(/[ÔÖÕÓÒ]+/g, 'O').
+                replace(/[š]+/g, 's').
+                replace(/[Š]+/g, 'S').
+                replace(/[ûüúù]+/g, 'u').
+                replace(/[ÛÜÚÙ]+/g, 'U').
+                replace(/[ÿý]+/g, 'y').
+                replace(/[ŸÝ]+/g, 'Y').
+                replace(/[ž]+/g, 'z').
+                replace(/[Ž]+/g, 'Z').
+                replace(/[¿]+/g, '?').
+                replace(/[¡]+/g, '!');
+        }
 
         res.render('swagger2iodocs', {
             title: 'Swagger2IODocs',
