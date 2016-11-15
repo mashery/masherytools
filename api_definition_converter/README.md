@@ -139,7 +139,7 @@ portalReady(function () {
     }
 });
 ```
-** NEW option:** IO Docs is currently unable to render definitions that include accented or non-ASCII characters. As a workaround, you can select the option to replace any occurrence of such characters with their respective ASCII character, as listed in the table below:
+**NEW option:** IO Docs is currently unable to render definitions that include accented or non-ASCII characters. As a workaround, you can select the option to replace any occurrence of such characters with their respective ASCII character, as listed in the table below:
 
 |Accented Characters|Replacement Character |Accented Characters|Replacement Character |
 |-------------------|----------------------|-------------------|----------------------|
