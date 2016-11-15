@@ -38,7 +38,7 @@
                     <td nowrap="nowrap" width="1%">
                         <label for="tgt_uuid">Target Area Name:</label>
                     </td>
-                    <td nowrap="nowrap" width="100%" colspan="2">
+                    <td nowrap="nowrap" width="100%" colspan="3">
                         <select id="tgt_uuid" name="tgt_uuid" style="width: 100%;">
                             {{#each tgtUuids}}
                                 {{#if (eq ../tgtUuid uuid)}}
@@ -54,15 +54,17 @@
                     <td nowrap="nowrap" width="1%">
                         <label class="formlabel" style="text-align: right;">Swagger Source:</label>
                     </td>
-                    <td nowrap="nowrap" style="padding: 0.7em;" width="1%">
+                    <!--td nowrap="nowrap" style="padding: 0.7em;" width="1%">
                         <input type="radio" name="source" value="1" checked="checked"/><span>&nbsp;URL</span>
-                    </td>
-                    <td nowrap="nowrap" style="padding: 0.7em;" width="100%">
+                    </td-->
+                    <td nowrap="nowrap" style="padding: 0.7em;" width="100%" colspan="3">
+                        <input type="radio" name="source" value="1" checked="checked"/><span>&nbsp;URL</span>
+                        <span>&nbsp;&nbsp;</span>
                         <input type="radio" name="source" value="2"/><span>&nbsp;File</span>
                     </td>
                 </tr>
                 <tr>
-                    <td colspan=3">
+                    <td colspan="4">
                         <input id="input_url" name="input_url" placeholder="Swagger URL" type="url"
                                style="display: inline; width: 100%;"
                                value="http://petstore.swagger.io/v2/swagger.json"/>
@@ -76,11 +78,15 @@
                     </td>
                     <td nowrap="nowrap">
                         <input id="validate_swagger" name="validate_swagger" type="checkbox"/>
-                        <label class="formlabel" style="text-align: right;">&nbsp;Validate Source (Swagger 2.0 only)</label>
+                        <label class="formlabel" style="text-align: right;">&nbsp;Validate Swagger (2.0 only)</label>
                     </td>
                     <td nowrap="nowrap">
                         <input id="gen_resp" name="gen_resp" type="checkbox" checked/>
                         <label class="formlabel" style="text-align: right;">&nbsp;Generate Sample Response</label>
+                    </td>
+                    <td nowrap="nowrap" width="100%">
+                        <input id="replace_acc" name="replace_acc" type="checkbox"/>
+                        <label class="formlabel" style="text-align: right;">&nbsp;Replace Accented Characters</label>
                     </td>
                 </tr>
             </table>
