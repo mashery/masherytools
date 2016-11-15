@@ -89,6 +89,8 @@ This tool consumes a WSDL-based SOAP Web service definition and creates a Masher
 
 This tool consumes a Swagger-based API definition (Swagger 2.0 only is supported at this point) and creates a Mashery IO Docs definition. The tool can be run in preview mode before being executed against a specific area. When run in preview mode, the generated IO Docs is printed to the browser, and can be copied/pasted into the IO Docs editor in the Mashery Control Center. When executed against a specific area, the IO Docs definition is created in the target area if none already exists, or updated if a definition does exist.
 
+![Swagger2IODocs](/../screenshots/Swagger2IODocsUrl.png?raw=true "Swagger2IODocs")
+
 **NEW feature:** an option to generate a sample response from a schema object in a textarea control. In order to render the sample in a syntax highlighting control, the following additional steps are required:
 
 * Add the following to the Head JavaScript section in the Portal Settings page:
@@ -137,6 +139,21 @@ portalReady(function () {
     }
 });
 ```
+** NEW option:** IO Docs is currently unable to render definitions that include accented or non-ASCII characters. As a workaround, you can select the option to replace any occurrence of such characters with their respective ASCII character, as listed in the table below:
+
+|Accented Characters|Replacement Character |Accented Characters|Replacement Character |
+|-------------------|----------------------|-------------------|----------------------|
+|âäãáà              | a                    |ÂÄÂÁÀÅ             | A                    |
+|ç                  | c                    |Ç                  | C                    |
+|êëèé               | e                    |ÊËÉÈ               | E                    |
+|îïíì               | i                    |ÎÏÍÌ               | I                    |
+|ñ                  | n                    |Ñ                  | N                    |
+|ôöõóò              | o                    |ÔÖÕÓÒ              | O                    |
+|š                  | s                    |Š                  | S                    |
+|ûüúù               | u                    |ÛÜÚÙ               | U                    |
+|ÿý                 | y                    |ŸÝ                 | Y                    |
+|ž                  | z                    |Ž                  | Z                    |
+|¿                  | ?                    |¡                  | !                    |
 
 **Caution:** No warning is provided before overwriting an existing IO Docs definition. _Use with care_.
 
