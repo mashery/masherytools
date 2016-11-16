@@ -14,6 +14,8 @@ Post clone of repository, change into the api_definition_converter directory and
 
 * ```npm install```
 * ```cp credentials.js.sample credentials.js``` and update to reflect your Mashery area information and V3 API key information.
+* ```cd node_modules/mashery```
+* ```npm install```
 
 ## Usage
 
