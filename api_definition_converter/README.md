@@ -26,6 +26,12 @@ To run the application in debug mode, use following command:
 
     node bin/www | node_modules/bunyan/bin/bunyan
 
+**Note:** If you see errors like the following on the console, they are safe to ignore
+
+    { [Error: Cannot find module './build/Release/DTraceProviderBindings'] code: 'MODULE_NOT_FOUND' }
+    { [Error: Cannot find module './build/default/DTraceProviderBindings'] code: 'MODULE_NOT_FOUND' }
+    { [Error: Cannot find module './build/Debug/DTraceProviderBindings'] code: 'MODULE_NOT_FOUND' }
+    
 Navigate to [http://localhost:3000](http://localhost:3000)
 
 ![Mashery API Tools](/../screenshots/MasheryTools.png?raw=true "Mashery Tools")
