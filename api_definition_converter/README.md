@@ -10,12 +10,11 @@ I created this Web UI wrapper around a collection of [Node.js](https://nodejs.or
 Node.js v4.4.3 or later
 
 ## Installation
-Post clone of repository, change into the api_definition_converter directory and perform the following commands/steps:
+Post clone of repository, perform the following steps:
 
-* ```npm install```
+* Change into the ```api_definition_converter``` directory and run the command ```npm install```
 * ```cp credentials.js.sample credentials.js``` and update to reflect your Mashery area information and V3 API key information.
-* ```cd node_modules/mashery```
-* ```npm install```
+* Change into the ```node_modules/mashery``` directory and run the command ```npm install```
 
 ## Usage
 
