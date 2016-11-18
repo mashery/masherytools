@@ -128,7 +128,7 @@ portalReady(function () {
      * IODocs syntax highlighting for Swagger sample *
      *************************************************/
     var iodocs = document.querySelector("#page-ioDocs");
-    if (undefined !== iodocs) {
+    if (undefined !== iodocs && null !== iodocs)) {
         var sample = $j( "textarea[name='params[response_sample]']" );
         if (undefined !== sample) {
             sample.addClass("sample");
