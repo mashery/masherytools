@@ -235,11 +235,11 @@ router.post('/', function (req, res) {
                     domainData.errors && domainData.errors.length > 0) {
                     if (domainData.errors[0].message && domainData.errors[0].message.indexOf("duplicate value") > 0) {
                         if (whitelist.indexOf(dmArgs.data.domain) < 0) {
-                            //console.error("Domain '%s' is already whitelisted", dmArgs.data.domain);
+                            log.error(domainData);
                             warnMsg = "Domain '" + dmArgs.data.domain + "' is already whitelisted";
                         }
                     } else {
-                        //console.error("%s %s", domainData.errorMessage, domainData.errors[0].message);
+                        log.error(domainData);
                         errorMsg = domainData.errorMessage;
                     }
                 } else {
@@ -263,19 +263,13 @@ router.post('/', function (req, res) {
                 epData.errors && epData.errors.length > 0) {
                 errorMsg = epData.errorMessage + " " + (epData.errors[0].message ? domainData.errors[0].message : "");
                 log.error(epData);
-                //console.error(printJson(epArgs));
-                //process.exit(1);
             } else if (epData.errorCode && epData.errorCode === 500) {
                 errorMsg = printJson(epData);
                 log.error(epData);
-                //console.error(printJson(epArgs));
-                //process.exit(1);
             } else {
                 if ("undefined" === typeof epData.name) {
                     errorMsg = printJson(epData);
                     log.error(epData);
-                    //console.error(printJson(epData));
-                    //process.exit(1);
                 } else {
                     endpoints.push(epData.name);
                     //console.log("Endpoint " + epData.name + " was created");
