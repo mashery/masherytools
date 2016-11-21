@@ -39,7 +39,7 @@ router.get('/', function (req, res) {
     });
 });
 
-router.post('/', function(req, res) {
+router.post('/', function (req, res) {
     /************************
      * Global error handler *
      ************************/
@@ -69,8 +69,6 @@ router.post('/', function(req, res) {
         areaUuid: req.body.tgt_uuid ? req.body.tgt_uuid : mashery_area_uuids[0].uuid
     });
 
-//    var config = require(path.join(__dirname, '..', 'config.js'));
-    var sample_response_dir = sample_response_swagger_dir;
     var trafficManagerHost = mashery_area_uuids.filter(function(item) {
         return item.uuid == (req.body.tgt_uuid ? req.body.tgt_uuid : mashery_area_uuids[0].uuid);
     })[0].tm_host;
@@ -151,7 +149,6 @@ router.post('/', function(req, res) {
 
             if (!host) {
                 errorMsg = "Invalid Swagger document - missing host and/or basePath entries";
-                //errorMsg = "Invalid Swagger document:<br><pre>" + printJson(swaggerDoc) + "</pre>";
                 res.render('swagger2mashery', {
                     title: 'Swagger2Mashery',
                     description: description,
@@ -186,20 +183,24 @@ router.post('/', function(req, res) {
             apiName = svcArgs.data.name;
 
             if (!printOnly) {
-                apiClient.methods.createService(svcArgs, function (serviceData, serviceRawResponse) {
-                    log.debug(serviceData);
-                    apiId = serviceData.id;
-                    apiName = serviceData.name;
-                    if (swaggerDoc.apis) { // Swagger 1.2
-                        setTimeout(function () {
-                            processSwagger12(swaggerDoc, apiId, basePath);
-                        }, 2000);
-                    } else if (swaggerDoc.paths) { // Swagger 2.0
-                        setTimeout(function () {
-                            processSwagger20(swaggerDoc, apiId, basePath);
-                        }, 2000);
-                    }
-                });
+                try {
+                    apiClient.methods.createService(svcArgs, function (serviceData, serviceRawResponse) {
+                        log.debug(serviceData);
+                        apiId = serviceData.id;
+                        apiName = serviceData.name;
+                        if (swaggerDoc.apis) { // Swagger 1.2
+                            setTimeout(function () {
+                                processSwagger12(swaggerDoc, apiId, basePath);
+                            }, 2000);
+                        } else if (swaggerDoc.paths) { // Swagger 2.0
+                            setTimeout(function () {
+                                processSwagger20(swaggerDoc, apiId, basePath);
+                            }, 2000);
+                        }
+                    });
+                } catch (ex) {
+                    log.error(ex.message);
+                }
             } else {
                 if (swaggerDoc.apis) { // Swagger 1.2
                     setTimeout(function () {
@@ -221,7 +222,7 @@ router.post('/', function(req, res) {
                 tgtUuids: mashery_area_uuids
             });
         }
-    }, 5000);
+    }, swaggerLoadWait);
 
     /**************************
      * check domain whitelist *
@@ -261,18 +262,18 @@ router.post('/', function(req, res) {
             if (epData.errorCode && epData.errorCode === 400 &&
                 epData.errors && epData.errors.length > 0) {
                 errorMsg = epData.errorMessage + " " + (epData.errors[0].message ? domainData.errors[0].message : "");
-                //console.error(epData);
+                log.error(epData);
                 //console.error(printJson(epArgs));
                 //process.exit(1);
             } else if (epData.errorCode && epData.errorCode === 500) {
                 errorMsg = printJson(epData);
-                //console.error(epData);
+                log.error(epData);
                 //console.error(printJson(epArgs));
                 //process.exit(1);
             } else {
                 if ("undefined" === typeof epData.name) {
                     errorMsg = printJson(epData);
-                    //console.error(epData);
+                    log.error(epData);
                     //console.error(printJson(epData));
                     //process.exit(1);
                 } else {
@@ -348,14 +349,6 @@ router.post('/', function(req, res) {
 
                 var updateJson = fs.existsSync(jsonFile);
                 var updateXml = fs.existsSync(xmlFile);
-
-                /*
-                if (printOnly) {
-                    console.log("      Method '%s' will be created\n" +
-                        "         Sample JSON response file: '%s' (exists: %s)\n" +
-                        "         Sample XML response file: '%s' (exists: %s)",
-                        methods[m].name, jsonFile, updateJson, xmlFile, updateXml);
-                }*/
 
                 if (updateJson || updateXml) {
                     var mdArgs = {
@@ -485,14 +478,6 @@ router.post('/', function(req, res) {
                     var updateJson = fs.existsSync(jsonFile);
                     var updateXml = fs.existsSync(xmlFile);
 
-                    /*
-                     if (printOnly) {
-                     console.log("      Method '%s' will be created\n" +
-                     "         Sample JSON response file: '%s' (exists: %s)\n" +
-                     "         Sample XML response file: '%s' (exists: %s)",
-                     methods[m].name, jsonFile, updateJson, xmlFile, updateXml);
-                     }*/
-
                     if (updateJson || updateXml) {
                         var mdArgs = {
                             name: methods[m].name,
@@ -532,8 +517,8 @@ router.post('/', function(req, res) {
 
                 //console.log(epArgs);
                 if (!printOnly) {
-                    setTimeout(createEndpoint, (ep+2)*5000, epArgs);
-                    log.debug("Endpoint " + ep + " will be created in " + ((ep+2)*5) + " seconds");
+                    setTimeout(createEndpoint, (ep+2)*syncInterval, epArgs);
+                    log.debug("Endpoint #" + (ep+1) + " will be created in " + ((ep+2)*(syncInterval/1000)) + " seconds");
                 } else {
                     endpoints.push(epArgs.data.name);
                 }
@@ -541,7 +526,7 @@ router.post('/', function(req, res) {
             } // end if p.length > 0
         } // end for p in paths
 
-        var renderTimeout = printOnly ? 2000 : Object.keys(swaggerDoc.paths).length * 2000;
+        var renderTimeout = printOnly ? 2000 : Object.keys(swaggerDoc.paths).length + 1 * syncInterval;
 
         console.log("Render timeout: " + renderTimeout);
         setTimeout(renderOutput, renderTimeout);
