@@ -231,6 +231,7 @@ router.post('/', function (req, res) {
     var whitelistDomain = function (dmArgs) {
         if (whitelist.indexOf(dmArgs.data.domain) < 0) {
             apiClient.methods.createDomain(dmArgs, function(domainData, domainRawResponse) {
+                log.debug(domainData);
                 if (domainData && domainData.errorCode && domainData.errorCode === 400 &&
                     domainData.errors && domainData.errors.length > 0) {
                     if (domainData.errors[0].message && domainData.errors[0].message.indexOf("duplicate value") > 0) {
@@ -244,7 +245,8 @@ router.post('/', function (req, res) {
                     }
                 } else {
                     //console.log("Registering new domain: '%s' is now %s", domainData.domain, domainData.status);
-                    if (domainData && domainData.status === "active" && whitelist.indexOf(domainData.domain) < 0) {
+                    if (domainData && domainData.domain && domainData.status && 
+                        domainData.status === "active" && whitelist.indexOf(domainData.domain) < 0) {
                         whitelist.push(domainData.domain);
                     }
                 }
