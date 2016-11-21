@@ -36,6 +36,9 @@ mashery_tools = [
     }
 ];
 
+swaggerLoadWait = 5000; // maximum time to wait for Swagger loading -- increase as needed
+syncInterval = 5000;    // 5 seconds between API calls
+
 // Not used in Web UI (onli in CLI)
 sample_response_raml_dir = './Samples/RAML'; // TODO: RAML can have inline !includes
 sample_response_wadl_dir = './Samples/WADL';
