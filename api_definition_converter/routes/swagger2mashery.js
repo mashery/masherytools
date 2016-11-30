@@ -1,15 +1,16 @@
-var express = require('express');
+var async   = require ('async');         // Asynchronous operations
+var bunyan  = require('bunyan');         // Logging
+var express = require('express');        // Web framework
+var fs      = require('fs');	         // File system
+var http    = require('http');           // HTTP client
+var https   = require('https');          // Secure HTTP client
+var path    = require('path');           // Directory
+var mashery = require('mashery');        // V3 API
+var multer  = require('multer');         // File upload
+var swagger = require('swagger-parser'); // Swagger validator
+var url     = require('url');            // URL parser
+
 var router = express.Router();
-
-var swagger = require('swagger-parser');
-var http  = require('http');  // HTTP client
-var https = require('https'); // HTTP client
-var url = require('url');	  // URL parser
-var fs = require('fs');	  // File system
-var path = require('path');  // Directory
-var mashery = require('mashery');
-
-var bunyan = require('bunyan');
 var log = bunyan.createLogger({
     name: 'swagger2mashery',
     serializers: {
@@ -20,7 +21,6 @@ var log = bunyan.createLogger({
     level : bunyan.DEBUG
 });
 
-var multer = require('multer');
 router.use(multer({storage: multer.memoryStorage(), inMemory:true}).single('input_file'));
 
 var creds = require(path.join(__dirname, '..', 'credentials.js'));
@@ -93,14 +93,14 @@ router.post('/', function (req, res) {
 
         var swaggerPath = parsedUrl ?
             path.resolve(
-                parsedUrl.hostname ? sample_response_dir : '',
+                '',
                 parsedUrl.hostname ? '.' + path.dirname(parsedUrl.pathname) : path.dirname(swaggerUrl)) : null;
         var swaggerFile = path.basename(swaggerUrl);
 
         // when a URL is used, default to samples directory as defined in config. Do not append relative path of URL.
         var swaggerDir = swaggerSource === "file" ?
             path.resolve(swaggerPath + path.sep + path.basename(swaggerFile, path.extname(swaggerFile))) :
-            path.resolve(sample_response_dir);
+            path.resolve('');
 
 
         if (parsedUrl.protocol && typeof parsedUrl.protocol !== 'undefined') {
@@ -174,8 +174,9 @@ router.post('/', function (req, res) {
             } else {
                 svcArgs = {
                     data: {
-                        "name": swaggerDoc.resourcePath.substring(1),
-                        "version": swaggerDoc.apiVersion
+                        "name": swaggerDoc.resourcePath ? swaggerDoc.resourcePath.substring(1) :
+                            basePath.path.substring(basePath.path.lastIndexOf('/') + 1),
+                        "version": swaggerDoc.apiVersion ? swaggerDoc.apiVersion : "1.0"
                     }
                 };
             }
@@ -241,12 +242,12 @@ router.post('/', function (req, res) {
                         }
                     } else {
                         log.error(domainData);
-                        errorMsg = domainData.errorMessage;
+                        errorMsg = domainData.errorMessage ? domainData.errorMessage :
+                            (domainData.errors && domainData.errors.length > 0 ? domainData.errors[0].message : "UNKNOWN");
                     }
                 } else {
-                    //console.log("Registering new domain: '%s' is now %s", domainData.domain, domainData.status);
-                    if (domainData && domainData.domain && domainData.status && 
-                        domainData.status === "active" && whitelist.indexOf(domainData.domain) < 0) {
+                    log.info("Registering new domain: '%s' is now %s", domainData.domain, domainData.status);
+                    if (domainData && domainData.status === "active" && whitelist.indexOf(domainData.domain) < 0) {
                         whitelist.push(domainData.domain);
                     }
                 }
@@ -257,24 +258,31 @@ router.post('/', function (req, res) {
     /*************************
      * create a new endpoint *
      *************************/
+    var domains = [];
     var endpoints = [];
-    var createEndpoint = function(epArgs) {
-        //printJson(epArgs);
+    var endpointUrls = [];
+    var createEndpoint = function(epArgs, callback) {
+        log.debug("Creating endpoint %s", epArgs.data.name);
         apiClient.methods.createServiceEndpoint(epArgs, function(epData, epRawResponse) {
+            log.debug(epData);
             if (epData.errorCode && epData.errorCode === 400 &&
                 epData.errors && epData.errors.length > 0) {
                 errorMsg = epData.errorMessage + " " + (epData.errors[0].message ? domainData.errors[0].message : "");
                 log.error(epData);
+                callback(new Error(epData));
             } else if (epData.errorCode && epData.errorCode === 500) {
                 errorMsg = printJson(epData);
                 log.error(epData);
+                callback(new Error(epData));
             } else {
                 if ("undefined" === typeof epData.name) {
                     errorMsg = printJson(epData);
                     log.error(epData);
+                    callback(new Error(epData));
                 } else {
-                    endpoints.push(epData.name);
+                    endpointUrls.push(epData.name);
                     //console.log("Endpoint " + epData.name + " was created");
+                    callback();
                 }
             }
         });
@@ -330,10 +338,12 @@ router.post('/', function (req, res) {
                 }
             };
 
-            if (printOnly && whitelist.indexOf(dmArgs.data.domain) < 0) {
-                whitelist.push(dmArgs.data.domain);
+            if (printOnly) {
+                if (whitelist.indexOf(dmArgs.data.domain) < 0) {
+                    whitelist.push(dmArgs.data.domain);
+                }
             } else {
-                setTimeout(whitelistDomain, 1000, dmArgs);
+                domains.push(dmArgs);
             }
 
             /******************
@@ -354,11 +364,9 @@ router.post('/', function (req, res) {
                     };
                     if (updateJson) {
                         mdArgs.sampleJsonResponse = fs.readFileSync(jsonFile, 'utf-8');
-                        //console.log("   Sample JSON for method '%s': %s", methods[m].name, mdArgs.sampleJsonResponse);
                     }
                     if (updateXml) {
                         mdArgs.sampleXmlResponse = fs.readFileSync(xmlFile, 'utf-8');
-                        //console.log("   Sample XML for method '%s': %s", methods[m].name, mdArgs.sampleXmlResponse);
                     }
                     methods[m] = mdArgs;
                 } // end if updateJson || updateXml
@@ -383,16 +391,20 @@ router.post('/', function (req, res) {
                         "inboundSslRequired": false
                     }
                 };
-                setTimeout(createEndpoint, (ep+2)*1000, epArgs);
+                endpoints.push(epArgs);
             } else {
-                endpoints.push(cleanPath);
+                endpointUrls.push(cleanPath);
             }
             ep++;
         } // end for swaggerDoc.apis
 
-        var renderTimeout = printOnly ? 1000 : (swaggerDoc.apis.length + 1)* 2000;
-        //console.log("Render timeout: " + renderTimeout);
-        setTimeout(renderOutput, renderTimeout);
+        async.eachSeries(domains, whitelistDomain, function (err) {
+            if (err) { throw err; }
+        });
+        async.eachSeries(endpoints, createEndpoint, function (err) {
+            if (err) { throw err; }
+            renderOutput();
+        });
     };
 
     /***********************
@@ -412,7 +424,7 @@ router.post('/', function (req, res) {
             swagger.validate(swaggerDoc, function(err, api) {
                 if ("undefined" != err && err.message) {
                     errorMsg = "Swagger 2.0 validation error: " + JSON.stringify(err.message, null, 2);
-                    //console.error(errorMsg);
+                    log.error(errorMsg);
                 }
             });
         }
@@ -457,11 +469,12 @@ router.post('/', function (req, res) {
                     }
                 };
 
-                if (printOnly && whitelist.indexOf(dmArgs.data.domain) < 0) {
-                    whitelist.push(dmArgs.data.domain);
-                    //console.log("   Endpoint '%s' will be created", cleanPath);
+                if (printOnly) {
+                    if (whitelist.indexOf(dmArgs.data.domain) < 0) {
+                        whitelist.push(dmArgs.data.domain);
+                    }
                 } else {
-                    setTimeout(whitelistDomain, 1000, dmArgs);
+                    domains.push(dmArgs);
                 }
 
                 /******************
@@ -482,11 +495,9 @@ router.post('/', function (req, res) {
                         };
                         if (updateJson) {
                             mdArgs.sampleJsonResponse = fs.readFileSync(jsonFile, 'utf-8');
-                            //console.log("   Sample JSON for method '%s': %s", methods[m].name, mdArgs.sampleJsonResponse);
                         }
                         if (updateXml) {
                             mdArgs.sampleXmlResponse = fs.readFileSync(xmlFile, 'utf-8');
-                            //console.log("   Sample XML for method '%s': %s", methods[m].name, mdArgs.sampleXmlResponse);
                         }
                         methods[m] = mdArgs;
                     } // end if updateJson || updateXml
@@ -511,34 +522,35 @@ router.post('/', function (req, res) {
                     }
                 };
 
-                //console.log(epArgs);
                 if (!printOnly) {
-                    setTimeout(createEndpoint, (ep+2)*syncInterval, epArgs);
-                    log.debug("Endpoint #" + (ep+1) + " will be created in " + ((ep+2)*(syncInterval/1000)) + " seconds");
+                    endpoints.push(epArgs);
                 } else {
-                    endpoints.push(epArgs.data.name);
+                    endpointUrls.push(epArgs.data.name);
                 }
                 ep++;
             } // end if p.length > 0
         } // end for p in paths
 
-        var renderTimeout = printOnly ? 2000 : Object.keys(swaggerDoc.paths).length + 1 * syncInterval;
-
-        console.log("Render timeout: " + renderTimeout);
-        setTimeout(renderOutput, renderTimeout);
+        async.eachSeries(domains, whitelistDomain, function (err) {
+            if (err) { throw err; }
+        });
+        async.eachSeries(endpoints, createEndpoint, function (err) {
+            if (err) { throw err; }
+            renderOutput();
+        });
     };
 
     /***********************
      * Render output *
      ***********************/
     var renderOutput = function() {
-        console.log("# of endpoints: %d", endpoints.length);
+        console.log("# of endpoints: %d", endpointUrls.length);
         var wlMulti;
         if (whitelist.length > 1) {
             wlMulti = "true";
         }
         var epMulti;
-        if (endpoints.length > 1) {
+        if (endpointUrls.length > 1) {
             epMulti = "true";
         }
         res.render('swagger2mashery', {
@@ -549,7 +561,7 @@ router.post('/', function (req, res) {
             warn: warnMsg,
             whitelist: whitelist,
             wlMulti: wlMulti,
-            endpoints: endpoints,
+            endpoints: endpointUrls,
             epMulti: epMulti,
             apiName: apiName,
             apiId: apiId,
