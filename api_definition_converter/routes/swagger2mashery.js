@@ -544,7 +544,7 @@ router.post('/', function (req, res) {
      * Render output *
      ***********************/
     var renderOutput = function() {
-        console.log("# of endpointUrls: %d", endpointUrls.length);
+        console.log("# of endpoints: %d", endpointUrls.length);
         var wlMulti;
         if (whitelist.length > 1) {
             wlMulti = "true";
