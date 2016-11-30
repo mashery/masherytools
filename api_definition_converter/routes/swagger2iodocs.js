@@ -1,16 +1,18 @@
-var express = require('express');
-var router = express.Router();
-
-var http    = require('http');    // HTTP client
-var https   = require('https');   // HTTP client
-var url     = require('url');	  // URL parser
-var fs      = require('fs');	  // File system
-var path    = require('path');    // Directory
-var mashery = require('mashery'); // V3 API
-var _       = require('lodash');  // Utility
+var bunyan  = require('bunyan');         // Logging
+var express = require('express');        // Web framework
+var fs      = require('fs');	         // File system
+var http    = require('http');           // HTTP client
+var https   = require('https');          // Secure HTTP client
 var jsf     = require('json-schema-faker'); // object generation
-var bunyan  = require('bunyan');  // Logging
+var path    = require('path');           // Directory
+var mashery = require('mashery');        // V3 API
+var multer  = require('multer');         // File upload
+var swagger = require('swagger-parser'); // Swagger validator
+var typeOf  = require('typeof--');
+var url     = require('url');            // URL parser
+var _       = require('lodash');  // Utility
 
+var router = express.Router();
 var log = bunyan.createLogger({
     name: 'swagger2iodocs',
     serializers: {
@@ -18,10 +20,9 @@ var log = bunyan.createLogger({
         res: bunyan.stdSerializers.res,
         err: bunyan.stdSerializers.err
     },
-    level : bunyan.INFO    // TODO: change this to DEBUG if needed
+    level : bunyan.DEBUG    // TODO: change this to DEBUG if needed
 });
 
-var multer = require('multer');
 router.use(multer({storage: multer.memoryStorage(), inMemory:true}).single('input_file'));
 
 var creds = require(path.join(__dirname, '..', 'credentials.js'));
@@ -31,7 +32,12 @@ var description = _.filter(mashery_tools, function(item) {
 })[0].description;
 
 /* GET home page. */
-router.get('/', function (req, res) {
+router.get('/', require('connect-ensure-login').ensureLoggedIn(), function (req, res) {
+    if (req.session.authenticatedUser !== req.user.emails[0].value) {
+        // retry 2-FA
+        res.redirect('/duoweb');
+    }
+
     res.render('swagger2iodocs', {
         title: 'Swagger2IODocs',
         description: description,
@@ -40,7 +46,12 @@ router.get('/', function (req, res) {
     });
 });
 
-router.post('/', function(req, res) {
+router.post('/', require('connect-ensure-login').ensureLoggedIn(), function (req, res) {
+    if (req.session.authenticatedUser !== req.user.emails[0].value) {
+        // retry 2-FA
+        res.redirect('/duoweb');
+    }
+
     /************************
      * Global error handler *
      ************************/
@@ -667,7 +678,14 @@ var printJson = function(obj) {
  *******************************/
 var mapValuesAscii = function(obj) {
     return _.mapValues(obj, function(value) {
-        return typeof value === "string" ? value.replace(/[»«]/g, "") : mapValuesAscii(value);
+        switch (typeOf(value)) {
+            case 'String':
+                return value.replace(/[»«]/g, "");
+            case 'Number':
+                return value;
+            default:
+                return mapValuesAscii(value);
+        }
     });
 };
 
