@@ -32,12 +32,7 @@ var description = _.filter(mashery_tools, function(item) {
 })[0].description;
 
 /* GET home page. */
-router.get('/', require('connect-ensure-login').ensureLoggedIn(), function (req, res) {
-    if (req.session.authenticatedUser !== req.user.emails[0].value) {
-        // retry 2-FA
-        res.redirect('/duoweb');
-    }
-
+router.get('/', function (req, res) {
     res.render('swagger2iodocs', {
         title: 'Swagger2IODocs',
         description: description,
@@ -46,12 +41,7 @@ router.get('/', require('connect-ensure-login').ensureLoggedIn(), function (req,
     });
 });
 
-router.post('/', require('connect-ensure-login').ensureLoggedIn(), function (req, res) {
-    if (req.session.authenticatedUser !== req.user.emails[0].value) {
-        // retry 2-FA
-        res.redirect('/duoweb');
-    }
-
+router.post('/', function (req, res) {
     /************************
      * Global error handler *
      ************************/
