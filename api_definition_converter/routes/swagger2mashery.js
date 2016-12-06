@@ -326,6 +326,12 @@ router.post('/', function (req, res) {
                 .replace(/{[A-Za-z0-9_]+}/g, "")
                 .replace(/\s\s/g, ' ')
                 .replace(/_/g, ' ').trim();
+            
+            var queryParam = cleanPath.indexOf('?');
+            if (queryParam > 0) {
+                cleanPath = cleanPath.substring(0, queryParam);
+            }
+            
             if (methods.length === 0) {
                 methods.push({"name": cleanPath});
             }
@@ -459,6 +465,10 @@ router.post('/', function (req, res) {
                     .replace(/\s\s/g, ' ')
                     .replace(/_/g, ' ').trim();
                 
+                var queryParam = cleanPath.indexOf('?');
+                if (queryParam > 0) {
+                    cleanPath = cleanPath.substring(0, queryParam);
+                }
                 methods.push({"name" : cleanPath });
 
                 // check if target domain is whitelisted
