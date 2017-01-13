@@ -415,6 +415,13 @@ router.post('/', function (req, res) {
                                                         }
                                                     }
                                                 }
+                                            } else {
+                                                methods[methodTag][opId]['parameters'][oParam.name] = {
+                                                    description: oParam.description,
+                                                    required: oParam.required,
+                                                    type: 'textarea',
+                                                    location: 'body'
+                                                }
                                             }
                                             break;
                                         case 'query':
