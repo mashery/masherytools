@@ -1,3 +1,4 @@
+var async   = require ('async');         // Asynchronous operations
 var express = require('express');
 var router = express.Router();
 var _ = require('lodash');
@@ -57,12 +58,13 @@ router.get('/', function (req, res) {
     });
 });
 
-router.post('/', function(req, res) {
+router.post('/', function (req, res) {
     /************************
      * Global error handler *
      ************************/
     var errorMsg;
     var warnMsg;
+    var serviceName;
 
     process.on('uncaughtException', function(err) {
         errorMsg = err.message;
@@ -124,7 +126,7 @@ router.post('/', function(req, res) {
                                 "status": "active"
                             }
                         };
-                        setTimeout(whitelistDomain, 1000, dmArgs);
+                        whitelistDomain(dmArgs);
                     }
                 }
 
@@ -135,9 +137,18 @@ router.post('/', function(req, res) {
                 var srcAreaPrefix = srcArea.slice(0, srcArea.indexOf("."));
                 var tgtAreaPrefix = tgtArea.slice(0, tgtArea.indexOf("."));
                 //console.log(epArgs);
-                setTimeout(createEndpoint, (ep+2)*1000, epArgs, srcAreaPrefix, tgtAreaPrefix);
+                //setTimeout(createEndpoint, (ep+2)*1000, epArgs, srcAreaPrefix, tgtAreaPrefix);
+                endpoints.push({
+                    src: srcAreaPrefix,
+                    dest: tgtAreaPrefix,
+                    ep: epArgs
+                })
             }
         } // end for ep in endpoints
+        async.eachSeries(endpoints, createEndpoint, function (err) {
+            if (err) { throw err; }
+            renderOutput();
+        });
     };
 
     /************************
@@ -169,8 +180,13 @@ router.post('/', function(req, res) {
     /*************************
      * create a new endpoint *
      *************************/
-    var createEndpoint = function(epArgs, srcAreaPrefix, tgtAreaPrefix) {
-        var epArgsCopy = _.clone(epArgs);
+    var endpoints = [];
+    var createEndpoint = function(epData, callback) {
+        var srcAreaPrefix = epData.src;
+        var tgtAreaPrefix = epData.dest;
+        var epArgs = epData.ep;
+
+        var epArgsCopy = _.clone(epArgs);   // TODO: is this needed anymore?
         if (epArgsCopy.data.trafficManagerDomain) {
             epArgsCopy.data.trafficManagerDomain = epArgsCopy.data.trafficManagerDomain.replace(srcAreaPrefix, tgtAreaPrefix);
         }
@@ -198,23 +214,22 @@ router.post('/', function(req, res) {
             }
         }
 
-        //console.log(JSON.stringify(epArgsCopy, null, 4));
-
         apiClient.methods.createServiceEndpoint(epArgsCopy, function(epData, epRawResponse) {
             if (epData.errorCode && epData.errorCode === 400) {
                 console.error("%s %s", epData.errorMessage, epData.errors[0].message);
                 //console.log(JSON.stringify(epArgs, null, 4));
-                //process.exit(1);
+                callback(new Error(epData));
             } else if (epData.errorCode && epData.errorCode === 500) {
                 console.error(epData);
                 //console.log(JSON.stringify(epArgs, null, 4));
-                //process.exit(1);
+                callback(new Error(epData));
             } else {
                 if ("undefined" === typeof epData.name) {
                     console.error(JSON.stringify(epData, null, 4));
-                    process.exit(1);
+                    callback(new Error(epData));
                 } else {
                     console.log("Created new endpoint '%s' with ID '%s'", epData.name, epData.id);
+                    callback();
                 }
             }
         });
@@ -324,27 +339,9 @@ router.post('/', function(req, res) {
                     console.log("Created new service '%s' with ID '%s'", apiName, apiId);
 
                     if (serviceData.endpoints) {
+                        serviceName = serviceData.name;
                         importServiceEndpoints(serviceData, apiId);
                     }
-
-                    setTimeout( function() {
-                        res.render('copyapi', {
-                            title: 'Copy API',
-                            description: description,
-                            tgtApi: serviceData.name,
-                            apiId: apiId,
-                            ccUrl: controlCenterUrl,
-                            tgtArea: tgtArea,
-                            srcUuid: srcAreaUuid,
-                            srcUuids: mashery_area_uuids,
-                            srcUser: srcUserName ? srcUserName : mashery_user_id,
-                            srcPwd: srcPwd ? srcPwd : mashery_password,
-                            srcKey: srcApiKey ? srcApiKey : mashery_api_key,
-                            srcSecret: srcSecret ? srcSecret : mashery_api_key_secret,
-                            tgtUuid: tgtAreaUuid,
-                            tgtUuids: mashery_area_uuids
-                        });
-                    }, (serviceData.endpoints.length+2) * 1000);
                 });
             });
             break;
@@ -429,6 +426,25 @@ router.post('/', function(req, res) {
             }
             break;
     }
+
+    var renderOutput = function() {
+        res.render('copyapi', {
+            title: 'Copy API',
+            description: description,
+            tgtApi: serviceName,
+            apiId: apiId,
+            ccUrl: controlCenterUrl,
+            tgtArea: tgtArea,
+            srcUuid: srcAreaUuid,
+            srcUuids: mashery_area_uuids,
+            srcUser: srcUserName ? srcUserName : mashery_user_id,
+            srcPwd: srcPwd ? srcPwd : mashery_password,
+            srcKey: srcApiKey ? srcApiKey : mashery_api_key,
+            srcSecret: srcSecret ? srcSecret : mashery_api_key_secret,
+            tgtUuid: tgtAreaUuid,
+            tgtUuids: mashery_area_uuids
+        });
+    };
 });
 
 module.exports = router;
