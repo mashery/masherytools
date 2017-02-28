@@ -31,6 +31,19 @@ hbs.registerHelper({
     }
 });
 
+hbs.registerHelper("math", function(lvalue, operator, rvalue, options) {
+    lvalue = parseFloat(lvalue);
+    rvalue = parseFloat(rvalue);
+
+    return {
+        "+": lvalue + rvalue,
+        "-": lvalue - rvalue,
+        "*": lvalue * rvalue,
+        "/": lvalue / rvalue,
+        "%": lvalue % rvalue
+    }[operator];
+});
+
 var fs = require('fs');	     // File system
 var path = require('path');  // Directory
 var mashery = require('mashery');
@@ -214,6 +227,8 @@ router.post('/', function (req, res) {
             }
         }
 
+        //console.log(JSON.stringify(epArgsCopy, null, 4));
+
         apiClient.methods.createServiceEndpoint(epArgsCopy, function(epData, epRawResponse) {
             if (epData.errorCode && epData.errorCode === 400) {
                 console.error("%s %s", epData.errorMessage, epData.errors[0].message);
@@ -245,11 +260,14 @@ router.post('/', function (req, res) {
     var srcApiKey = req.body.src_key ? req.body.src_key : mashery_api_key;
     var srcSecret = req.body.src_secret ? req.body.src_secret : mashery_api_key_secret;
     var srcAreaUuid = req.body.src_uuid ? req.body.src_uuid : mashery_area_uuids[0].uuid;
+    var srcOffset = req.body.src_offset ? parseInt(req.body.src_offset) : 0;
 
     var tgtUserName = req.body.tgt_user ? req.body.tgt_user : mashery_user_id;
     var tgtPwd = req.body.tgt_pwd ? req.body.tgt_pwd : mashery_password;
     var tgtApiKey = req.body.tgt_key ? req.body.tgt_key : mashery_api_key;
     var tgtSecret = req.body.tgt_secret ? req.body.tgt_secret : mashery_api_key_secret;
+    var tgtOffset = req.body.tgt_offset ? parseInt(req.body.tgt_offset) : 0;
+
     var tgtAreaUuid;
     var tgtArea;
     var srcArea;
@@ -260,10 +278,18 @@ router.post('/', function (req, res) {
     var svcsArgs = {
         parameters: {fields: 'id,name,version,description'}
     };
+    if (req.body.src_offset) {
+        svcsArgs.parameters["offset"] = req.body.src_offset;
+    }
+    if (req.body.tgt_offset) {
+        svcsArgs.parameters["offset"] = req.body.tgt_offset;
+    }
 
     var op = req.body.copyapi ? "copy" :
         (req.body.load_src_services ? "source" :
-            (req.body.load_tgt_services ? "target" : null));
+            (req.body.load_tgt_services ? "target" :
+                ( req.body.src_offset ? "source" :
+                    ( req.body.tgt_offset ? "target" : null ))));
 
     if (!op) {
         res.render('copyapi', {
@@ -356,10 +382,21 @@ router.post('/', function (req, res) {
             });
             try {
                 apiClient.methods.fetchAllServices(svcsArgs, function (svcsData, svcsRawResponse) {
+                    var srcRange = "1 - " + svcsData.length;
+                    var totalCount = parseInt(svcsRawResponse.headers["x-total-count"]);
+                    var srcRemain = totalCount - srcOffset - svcsData.length;
+
+                    if (srcOffset > 0) {
+                        srcRange = (srcOffset + 1) + " - " + (srcOffset + svcsData.length);
+                    }
                     res.render('copyapi', {
                         title: 'Copy API',
                         description: description,
                         srcServices: svcsData,
+                        srcOffset: srcOffset,
+                        srcRange: srcRange,
+                        srcRemain: srcRemain,
+                        totalCount: totalCount,
                         error: errorMsg,
                         warn: warnMsg,
                         srcUuid: srcAreaUuid,
@@ -397,10 +434,21 @@ router.post('/', function (req, res) {
             });
             try {
                 apiClient.methods.fetchAllServices(svcsArgs, function (svcsData, svcsRawResponse) {
+                    var tgtRange = "1 - " + svcsData.length;
+                    var totalCount = parseInt(svcsRawResponse.headers["x-total-count"]);
+                    var tgtRemain = totalCount - tgtOffset - svcsData.length;
+
+                    if (tgtOffset > 0) {
+                        tgtRange = (tgtOffset + 1) + " - " + (tgtOffset + svcsData.length);
+                    }
                     res.render('copyapi', {
                         title: 'Copy API',
                         description: description,
                         tgtServices: svcsData,
+                        tgtOffset: tgtOffset,
+                        tgtRange: tgtRange,
+                        tgtRemain: tgtRemain,
+                        totalCount: totalCount,
                         error: errorMsg,
                         warn: warnMsg,
                         srcUuid: srcAreaUuid,
