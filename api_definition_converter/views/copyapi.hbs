@@ -3,7 +3,8 @@
 <hr style="width: 100%; margin-top: 1em; margin-bottom: 1em;"/>
 <div id="container" style="overflow:hidden;">
     <div id="source" style="width: 49%; height: 100%; float: left;">
-        <form class="form" action="copyapi" method="POST" enctype="application/x-www-form-urlencoded">
+        <form id="listSrc" class="form" action="copyapi" method="POST" enctype="application/x-www-form-urlencoded">
+            <input type="hidden" id="src_offset" name="src_offset" value="{{srcOffset}}">
             <table style="border-top: 0;">
                 <tr>
                     <th nowrap="nowrap" colspan="2">Source Area</th>
@@ -74,6 +75,24 @@
         </form>
         {{#if srcServices}}
             <div id="srcServices" style="margin-top: 4em;">
+                <p>Showing {{srcRange}} of {{totalCount}}
+                    {{#if (gt srcRemain 0)}}
+                        {{#if (gt srcOffset 0)}}
+                            &nbsp;|&nbsp;<a id="src-list-prev" href="#">prev 100</a>
+                        {{/if}}
+                        {{#if (lt srcServices.length totalCount)}}&nbsp;|&nbsp;<a id="src-list-next" href="#">next
+                            {{#if (lte srcRemain srcServices.length)}}
+                                {{srcRemain}}
+                            {{else}}
+                                {{srcServices.length}}
+                            {{/if}}</a>
+                        {{/if}}
+                    {{else}}
+                        {{#if (gt srcOffset 0)}}
+                            &nbsp;|&nbsp;<a id="src-list-prev" href="#">prev 100</a>
+                        {{/if}}
+                    {{/if}}
+                </p>
                 {{#each srcServices}}
                     <div id="{{id}}" style="position: relative;">
                         <form id="copyform{{id}}" class="form" action="copyapi" method="POST"
@@ -133,7 +152,8 @@
         {{/if}}
     </div>
     <div id="dest" style="width: 49%; height: 100%; float: right;">
-        <form class="form" action="copyapi" method="POST" enctype="application/x-www-form-urlencoded">
+        <form id="listTgt" class="form" action="copyapi" method="POST" enctype="application/x-www-form-urlencoded">
+            <input type="hidden" id="tgt_offset" name="tgt_offset" value="{{tgtOffset}}">
             <table style="border-top: 0;">
                 <tr>
                     <th nowrap="nowrap" colspan="2">Destination Area</th>
@@ -205,6 +225,27 @@
         </form>
         {{#if tgtServices}}
             <div id="tgtServices" style="margin-top: 4em;">
+                <p>Set: {{tgtServices.length}}</p>
+                <p>Remaining: {{tgtRemain}}</p>
+                <p>Total: {{totalCount}}</p>
+                <p>Showing {{tgtRange}} of {{totalCount}}
+                    {{#if (gt tgtRemain 0)}}
+                        {{#if (gt tgtOffset 0)}}
+                            &nbsp;|&nbsp;<a id="tgt-list-prev" href="#">prev 100</a>
+                        {{/if}}
+                        {{#if (lt tgtServices.length totalCount)}}&nbsp;|&nbsp;<a id="tgt-list-next" href="#">next
+                            {{#if (lte tgtRemain tgtServices.length)}}
+                                {{tgtRemain}}
+                            {{else}}
+                                {{tgtServices.length}}
+                            {{/if}}</a>
+                        {{/if}}
+                    {{else}}
+                        {{#if (gt tgtOffset 0)}}
+                            &nbsp;|&nbsp;<a id="tgt-list-prev" href="#">prev 100</a>
+                        {{/if}}
+                    {{/if}}
+                </p>
                 {{#each tgtServices}}
                     <div id="{{id}}" style="position: relative;">
                         <table>
@@ -241,8 +282,8 @@
 {{#if warn}}
     <div id="warn" class="message">{{warn}}</div>
 {{/if}}
-<script src="https://pagedown.googlecode.com/hg/Markdown.Converter.js"></script>
-<script src="https://pagedown.googlecode.com/hg/Markdown.Sanitizer.js"></script>
+<script src="javascripts/Markdown.Converter.js"></script>
+<script src="javascripts/Markdown.Sanitizer.js"></script>
 <script type="text/javascript">
     <!--
     $(function () {
@@ -252,6 +293,31 @@
                 var content = $(this).html();
                 var replace = convert(content);
                 $(this).html(replace);
+            });
+
+            $('#src-list-next').click(function() {
+                var offset = parseInt($('#src_offset').val());
+                offset += parseInt("{{srcServices.length}}");
+                $('#src_offset').val(offset).change();
+                $('#listSrc').submit();
+            });
+            $('#src-list-prev').click(function() {
+                var offset = parseInt($('#src_offset').val());
+                offset -= 100;
+                $('#src_offset').val(offset).change();
+                $('#listSrc').submit();
+            });
+            $('#tgt-list-next').click(function() {
+                var offset = parseInt($('#tgt_offset').val());
+                offset += parseInt("{{tgtServices.length}}");
+                $('#tgt_offset').val(offset).change();
+                $('#listTgt').submit();
+            });
+            $('#tgt-list-prev').click(function() {
+                var offset = parseInt($('#tgt_offset').val());
+                offset -= 100;
+                $('#tgt_offset').val(offset).change();
+                $('#listTgt').submit();
             });
         });
     });
