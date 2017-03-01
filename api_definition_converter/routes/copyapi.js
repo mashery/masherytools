@@ -261,12 +261,14 @@ router.post('/', function (req, res) {
     var srcSecret = req.body.src_secret ? req.body.src_secret : mashery_api_key_secret;
     var srcAreaUuid = req.body.src_uuid ? req.body.src_uuid : mashery_area_uuids[0].uuid;
     var srcOffset = req.body.src_offset ? parseInt(req.body.src_offset) : 0;
+    var srcLimit = req.body.src_limit ? parseInt(req.body.src_limit) : 100;
 
     var tgtUserName = req.body.tgt_user ? req.body.tgt_user : mashery_user_id;
     var tgtPwd = req.body.tgt_pwd ? req.body.tgt_pwd : mashery_password;
     var tgtApiKey = req.body.tgt_key ? req.body.tgt_key : mashery_api_key;
     var tgtSecret = req.body.tgt_secret ? req.body.tgt_secret : mashery_api_key_secret;
     var tgtOffset = req.body.tgt_offset ? parseInt(req.body.tgt_offset) : 0;
+    var tgtLimit = req.body.tgt_limit ? parseInt(req.body.tgt_limit) : 100;
 
     var tgtAreaUuid;
     var tgtArea;
@@ -283,6 +285,12 @@ router.post('/', function (req, res) {
     }
     if (req.body.tgt_offset) {
         svcsArgs.parameters["offset"] = req.body.tgt_offset;
+    }
+    if (req.body.src_limit) {
+        svcsArgs.parameters["limit"] = req.body.src_limit;
+    }
+    if (req.body.tgt_limit) {
+        svcsArgs.parameters["limit"] = req.body.tgt_limit;
     }
 
     var op = req.body.copyapi ? "copy" :
@@ -396,6 +404,7 @@ router.post('/', function (req, res) {
                         srcOffset: srcOffset,
                         srcRange: srcRange,
                         srcRemain: srcRemain,
+                        srcLimit: srcLimit,
                         totalCount: totalCount,
                         error: errorMsg,
                         warn: warnMsg,
@@ -448,6 +457,7 @@ router.post('/', function (req, res) {
                         tgtOffset: tgtOffset,
                         tgtRange: tgtRange,
                         tgtRemain: tgtRemain,
+                        tgtLimit: tgtLimit,
                         totalCount: totalCount,
                         error: errorMsg,
                         warn: warnMsg,
