@@ -5,6 +5,7 @@
     <div id="source" style="width: 49%; height: 100%; float: left;">
         <form id="listSrc" class="form" action="copyapi" method="POST" enctype="application/x-www-form-urlencoded">
             <input type="hidden" id="src_offset" name="src_offset" value="{{srcOffset}}">
+            <input type="hidden" id="src_limit" name="src_limit" value="{{srcLimit}}"/>
             <table style="border-top: 0;">
                 <tr>
                     <th nowrap="nowrap" colspan="2">Source Area</th>
@@ -78,7 +79,12 @@
                 <p>Showing {{srcRange}} of {{totalCount}}
                     {{#if (gt srcRemain 0)}}
                         {{#if (gt srcOffset 0)}}
-                            &nbsp;|&nbsp;<a id="src-list-prev" href="#">prev 100</a>
+                            &nbsp;|&nbsp;<a id="src-list-prev" href="#">prev
+                            {{#if (lte srcLimit srcOffset)}}
+                                {{srcLimit}}
+                            {{else}}
+                                {{srcOffset}}
+                            {{/if}}</a>
                         {{/if}}
                         {{#if (lt srcServices.length totalCount)}}&nbsp;|&nbsp;<a id="src-list-next" href="#">next
                             {{#if (lte srcRemain srcServices.length)}}
@@ -86,10 +92,21 @@
                             {{else}}
                                 {{srcServices.length}}
                             {{/if}}</a>
+                            <span style="margin-left: 2em;">&nbsp;&nbsp;Records per page:&nbsp;
+                                <input type="number" id="limit_placeholder" name="limit_placeholder" value="{{srcLimit}}" style="width: 50px;"/>
+                            </span>
                         {{/if}}
                     {{else}}
                         {{#if (gt srcOffset 0)}}
-                            &nbsp;|&nbsp;<a id="src-list-prev" href="#">prev 100</a>
+                            &nbsp;|&nbsp;<a id="src-list-prev" href="#">prev
+                            {{#if (lte srcLimit srcOffset)}}
+                                {{srcLimit}}
+                            {{else}}
+                                {{srcOffset}}
+                            {{/if}}</a>
+                            <span style="margin-left: 2em;">&nbsp;&nbsp;Records per page:&nbsp;
+                                <input type="number" id="limit_placeholder" name="limit_placeholder" value="{{srcLimit}}" style="width: 50px;"/>
+                            </span>
                         {{/if}}
                     {{/if}}
                 </p>
@@ -154,6 +171,7 @@
     <div id="dest" style="width: 49%; height: 100%; float: right;">
         <form id="listTgt" class="form" action="copyapi" method="POST" enctype="application/x-www-form-urlencoded">
             <input type="hidden" id="tgt_offset" name="tgt_offset" value="{{tgtOffset}}">
+            <input type="hidden" id="tgt_limit" name="tgt_limit" value="{{tgtLimit}}"/>
             <table style="border-top: 0;">
                 <tr>
                     <th nowrap="nowrap" colspan="2">Destination Area</th>
@@ -228,7 +246,12 @@
                 <p>Showing {{tgtRange}} of {{totalCount}}
                     {{#if (gt tgtRemain 0)}}
                         {{#if (gt tgtOffset 0)}}
-                            &nbsp;|&nbsp;<a id="tgt-list-prev" href="#">prev 100</a>
+                            &nbsp;|&nbsp;<a id="tgt-list-prev" href="#">prev
+                            {{#if (lte tgtLimit tgtOffset)}}
+                                {{tgtLimit}}
+                            {{else}}
+                                {{tgtOffset}}
+                            {{/if}}</a>
                         {{/if}}
                         {{#if (lt tgtServices.length totalCount)}}&nbsp;|&nbsp;<a id="tgt-list-next" href="#">next
                             {{#if (lte tgtRemain tgtServices.length)}}
@@ -236,10 +259,21 @@
                             {{else}}
                                 {{tgtServices.length}}
                             {{/if}}</a>
+                            <span style="margin-left: 2em;">&nbsp;&nbsp;Records per page:&nbsp;
+                                <input type="number" id="limit_placeholder" name="limit_placeholder" value="{{tgtLimit}}" style="width: 50px;"/>
+                            </span>
                         {{/if}}
                     {{else}}
                         {{#if (gt tgtOffset 0)}}
-                            &nbsp;|&nbsp;<a id="tgt-list-prev" href="#">prev 100</a>
+                            &nbsp;|&nbsp;<a id="tgt-list-prev" href="#">prev
+                            {{#if (lte tgtLimit tgtOffset)}}
+                                {{tgtLimit}}
+                            {{else}}
+                                {{tgtOffset}}
+                            {{/if}}</a>
+                            <span style="margin-left: 2em;">&nbsp;&nbsp;Records per page:&nbsp;
+                                <input type="number" id="limit_placeholder" name="limit_placeholder" value="{{tgtLimit}}" style="width: 50px;"/>
+                            </span>
                         {{/if}}
                     {{/if}}
                 </p>
@@ -294,26 +328,58 @@
 
             $('#src-list-next').click(function() {
                 var offset = parseInt($('#src_offset').val());
-                offset += parseInt("{{srcServices.length}}");
+                var limit = parseInt($('#limit_placeholder').val());
+                var remain = parseInt("{{srcRemain}}");
+                var set = parseInt("{{srcServices.length}}");
+                if (remain <= limit) {
+                    offset += limit;
+                } else {
+                    offset += set;
+                }
                 $('#src_offset').val(offset).change();
+                if (limit !== parseInt("{{srcServices.length}}")) {
+                    $('#src_limit').val(limit).change();
+                }
                 $('#listSrc').submit();
             });
             $('#src-list-prev').click(function() {
                 var offset = parseInt($('#src_offset').val());
-                offset -= 100;
+                var limit = parseInt($('#limit_placeholder').val());
+                offset -= limit;
+                if (offset < 0) offset = 0;
                 $('#src_offset').val(offset).change();
+                var limit = parseInt($('#limit_placeholder').val());
+                if (limit !== parseInt("{{srcServices.length}}")) {
+                    $('#src_limit').val(limit).change();
+                }
                 $('#listSrc').submit();
             });
             $('#tgt-list-next').click(function() {
                 var offset = parseInt($('#tgt_offset').val());
-                offset += parseInt("{{tgtServices.length}}");
+                var limit = parseInt($('#limit_placeholder').val());
+                var remain = parseInt("{{tgtRemain}}");
+                var set = parseInt("{{tgtServices.length}}");
+                if (remain <= limit) {
+                    offset += limit;
+                } else {
+                    offset += set;
+                }
                 $('#tgt_offset').val(offset).change();
+                if (limit !== parseInt("{{tgtServices.length}}")) {
+                    $('#tgt_limit').val(limit).change();
+                }
                 $('#listTgt').submit();
             });
             $('#tgt-list-prev').click(function() {
                 var offset = parseInt($('#tgt_offset').val());
-                offset -= 100;
+                var limit = parseInt($('#limit_placeholder').val());
+                offset -= limit;
+                if (offset < 0) offset = 0;
                 $('#tgt_offset').val(offset).change();
+                var limit = parseInt($('#limit_placeholder').val());
+                if (limit !== parseInt("{{tgtServices.length}}")) {
+                    $('#tgt_limit').val(limit).change();
+                }
                 $('#listTgt').submit();
             });
         });
