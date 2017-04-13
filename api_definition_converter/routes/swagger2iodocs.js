@@ -440,6 +440,14 @@ router.post('/', function (req, res) {
                                                 location: 'pathReplace'
                                             };
                                             break;
+                                        case 'header':
+                                            methods[methodTag][opId]['parameters']['{'+oParam.name+'}'] = {
+                                                description: oParam.description,
+                                                required: oParam.required,
+                                                type: oParam.type,
+                                                location: 'header'
+                                            };
+                                            break;
                                         case 'formData':
                                             methods[methodTag][opId]['parameters'][oParam.name] = {
                                                 description: oParam.description,
