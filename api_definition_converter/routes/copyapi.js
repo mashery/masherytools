@@ -1,32 +1,42 @@
-var async   = require ('async');         // Asynchronous operations
+var async = require('async'); // Asynchronous operations
+var bunyan = require('bunyan'); // Logging
 var express = require('express');
 var router = express.Router();
+var log = bunyan.createLogger({
+    name: 'copyapi',
+    serializers: {
+        req: bunyan.stdSerializers.req,
+        res: bunyan.stdSerializers.res,
+        err: bunyan.stdSerializers.err
+    },
+    level: bunyan.DEBUG
+});
 var _ = require('lodash');
 
 var hbs = require('hbs');
 hbs.registerHelper({
-    eq: function (v1, v2) {
+    eq: function(v1, v2) {
         return v1 === v2;
     },
-    ne: function (v1, v2) {
+    ne: function(v1, v2) {
         return v1 !== v2;
     },
-    lt: function (v1, v2) {
+    lt: function(v1, v2) {
         return v1 < v2;
     },
-    gt: function (v1, v2) {
+    gt: function(v1, v2) {
         return v1 > v2;
     },
-    lte: function (v1, v2) {
+    lte: function(v1, v2) {
         return v1 <= v2;
     },
-    gte: function (v1, v2) {
+    gte: function(v1, v2) {
         return v1 >= v2;
     },
-    and: function (v1, v2) {
+    and: function(v1, v2) {
         return v1 && v2;
     },
-    or: function (v1, v2) {
+    or: function(v1, v2) {
         return v1 || v2;
     }
 });
@@ -44,8 +54,8 @@ hbs.registerHelper("math", function(lvalue, operator, rvalue, options) {
     }[operator];
 });
 
-var fs = require('fs');	     // File system
-var path = require('path');  // Directory
+var fs = require('fs'); // File system
+var path = require('path'); // Directory
 var mashery = require('mashery');
 
 var config = require(path.join(__dirname, '..', 'config.js'));
@@ -54,9 +64,7 @@ var description = mashery_tools.filter(function(item) {
 })[0].description;
 
 /* GET home page */
-router.get('/', function (req, res) {
-    var creds = require(path.join(__dirname, '..', 'credentials.js'));
-
+router.get('/', function(req, res) {
     res.render('copyapi', {
         title: 'Copy API',
         description: description,
@@ -71,7 +79,7 @@ router.get('/', function (req, res) {
     });
 });
 
-router.post('/', function (req, res) {
+router.post('/', function(req, res) {
     /************************
      * Global error handler *
      ************************/
@@ -106,18 +114,18 @@ router.post('/', function (req, res) {
 
         apiClient.methods.fetchService(svcArgs, function(serviceData, serviceRawResponse) {
             if (serviceData.errorCode && serviceData.errorCode === 400) {
-                console.error("%s %s", serviceData.errorMessage, serviceData.errors[0].message);
+                log.error("%s %s", serviceData.errorMessage, serviceData.errors[0].message);
                 //process.exit(1);
             } else if (serviceData.errorCode && serviceData.errorCode === 500) {
-                console.error(serviceData);
+                log.error(serviceData);
                 //process.exit(1);
             } else {
                 if ("undefined" === typeof serviceData.name) {
-                    console.error(JSON.stringify(serviceData, null, 4));
+                    log.error(JSON.stringify(serviceData, null, 4));
                     //process.exit(1);
                 } else {
                     //console.log(typeof callback);
-                    if(typeof callback === 'function') {callback(serviceData);}
+                    if (typeof callback === 'function') { callback(serviceData); }
                 }
             }
 
@@ -147,18 +155,25 @@ router.post('/', function (req, res) {
                     path: { serviceId: apiId },
                     data: serviceData.endpoints[ep]
                 };
-                var srcAreaPrefix = srcArea.slice(0, srcArea.indexOf("."));
-                var tgtAreaPrefix = tgtArea.slice(0, tgtArea.indexOf("."));
-                //console.log(epArgs);
-                //setTimeout(createEndpoint, (ep+2)*1000, epArgs, srcAreaPrefix, tgtAreaPrefix);
+
+                var srcAreaTmHost = mashery_area_uuids.filter(function(item) {
+                    return item.name == srcArea;
+                })[0].tm_host;
+                var tgtAreaTmHost = mashery_area_uuids.filter(function(item) {
+                    return item.name == tgtArea;
+                })[0].tm_host;
+
+                var srcAreaPrefix = srcAreaTmHost.slice(0, srcAreaTmHost.indexOf("."));
+                var tgtAreaPrefix = tgtAreaTmHost.slice(0, tgtAreaTmHost.indexOf("."));
+
                 endpoints.push({
                     src: srcAreaPrefix,
                     dest: tgtAreaPrefix,
                     ep: epArgs
-                })
+                });
             }
         } // end for ep in endpoints
-        async.eachSeries(endpoints, createEndpoint, function (err) {
+        async.eachSeries(endpoints, createEndpoint, function(err) {
             if (err) { throw err; }
             renderOutput();
         });
@@ -168,20 +183,20 @@ router.post('/', function (req, res) {
      * whitelist API domain *
      ************************/
     var whitelist = [];
-    var whitelistDomain = function (dmArgs) {
+    var whitelistDomain = function(dmArgs) {
         if (whitelist.indexOf(dmArgs.data.domain) < 0) {
             apiClient.methods.createDomain(dmArgs, function(domainData, domainRawResponse) {
                 if (domainData.errorCode && domainData.errorCode === 400) {
                     if (domainData.errors[0].message.indexOf("duplicate value") > 0) {
                         if (whitelist.indexOf(dmArgs.data.domain) < 0) {
-                            console.error("Domain '%s' is already whitelisted", dmArgs.data.domain);
+                            log.warn("Domain '%s' is already whitelisted", dmArgs.data.domain);
                             whitelist.push(dmArgs.data.domain);
                         }
                     } else {
-                        console.error("%s %s", domainData.errorMessage, domainData.errors[0].message);
+                        log.error("%s %s", domainData.errorMessage, domainData.errors[0].message);
                     }
                 } else {
-                    console.log("Registering new domain: '%s' is now %s", domainData.domain, domainData.status);
+                    log.debug("Registering new domain: '%s' is now %s", domainData.domain, domainData.status);
                     if (domainData.status === "active") {
                         whitelist.push(domainData.domain);
                     }
@@ -199,13 +214,13 @@ router.post('/', function (req, res) {
         var tgtAreaPrefix = epData.dest;
         var epArgs = epData.ep;
 
-        var epArgsCopy = _.clone(epArgs);   // TODO: is this needed anymore?
+        var epArgsCopy = _.clone(epArgs); // TODO: is this needed anymore?
         if (epArgsCopy.data.trafficManagerDomain) {
             epArgsCopy.data.trafficManagerDomain = epArgsCopy.data.trafficManagerDomain.replace(srcAreaPrefix, tgtAreaPrefix);
         }
         if (epArgsCopy.data.publicDomains[0].address &&
             epArgsCopy.data.publicDomains[0].address.indexOf(".api.mashery.com") > 0) {
-            epArgsCopy.data.publicDomains[0].address = 
+            epArgsCopy.data.publicDomains[0].address =
                 epArgsCopy.data.publicDomains[0].address.replace(srcAreaPrefix, tgtAreaPrefix);
         } else {
             epArgsCopy.data.publicDomains[0].address = epArgsCopy.data.trafficManagerDomain;
@@ -231,19 +246,19 @@ router.post('/', function (req, res) {
 
         apiClient.methods.createServiceEndpoint(epArgsCopy, function(epData, epRawResponse) {
             if (epData.errorCode && epData.errorCode === 400) {
-                console.error("%s %s", epData.errorMessage, epData.errors[0].message);
+                log.error("%s %s", epData.errorMessage, epData.errors[0].message);
                 //console.log(JSON.stringify(epArgs, null, 4));
                 callback(new Error(epData));
             } else if (epData.errorCode && epData.errorCode === 500) {
-                console.error(epData);
+                log.error(epData);
                 //console.log(JSON.stringify(epArgs, null, 4));
                 callback(new Error(epData));
             } else {
                 if ("undefined" === typeof epData.name) {
-                    console.error(JSON.stringify(epData, null, 4));
+                    log.error(JSON.stringify(epData, null, 4));
                     callback(new Error(epData));
                 } else {
-                    console.log("Created new endpoint '%s' with ID '%s'", epData.name, epData.id);
+                    log.info("Created new endpoint '%s' with ID '%s'", epData.name, epData.id);
                     callback();
                 }
             }
@@ -278,7 +293,7 @@ router.post('/', function (req, res) {
     var apiClient;
 
     var svcsArgs = {
-        parameters: {fields: 'id,name,version,description'}
+        parameters: { fields: 'id,name,version,description' }
     };
     if (req.body.src_offset) {
         svcsArgs.parameters["offset"] = req.body.src_offset;
@@ -296,8 +311,8 @@ router.post('/', function (req, res) {
     var op = req.body.copyapi ? "copy" :
         (req.body.load_src_services ? "source" :
             (req.body.load_tgt_services ? "target" :
-                ( req.body.src_offset ? "source" :
-                    ( req.body.tgt_offset ? "target" : null ))));
+                (req.body.src_offset ? "source" :
+                    (req.body.tgt_offset ? "target" : null))));
 
     if (!op) {
         res.render('copyapi', {
@@ -322,9 +337,9 @@ router.post('/', function (req, res) {
     switch (op) {
         case "copy":
             var api = req.body.copyapi;
-            srcAreaUuid = req.body.src_area.slice(req.body.src_area.indexOf("|")+1);
+            srcAreaUuid = req.body.src_area.slice(req.body.src_area.indexOf("|") + 1);
             srcArea = req.body.src_area.slice(0, req.body.src_area.indexOf("|"));
-            tgtAreaUuid = req.body.tgt_area.slice(req.body.tgt_area.indexOf("|")+1);
+            tgtAreaUuid = req.body.tgt_area.slice(req.body.tgt_area.indexOf("|") + 1);
             tgtArea = req.body.tgt_area.slice(0, req.body.tgt_area.indexOf("|"));
             var tgtAreaFilter = mashery_area_uuids.filter(function(item) {
                 return item.uuid == tgtAreaUuid;
@@ -352,11 +367,11 @@ router.post('/', function (req, res) {
                             "name": serviceData.name,
                             "description": serviceData.description ? serviceData.description : "",
                             "version": serviceData.version ? serviceData.version : "",
-                            "securityProfile" : serviceData.securityProfile
+                            "securityProfile": serviceData.securityProfile
                         }
                     };
                 } else {
-                    console.error("No service name found - invalid API definition");
+                    log.error("No service name found - invalid API definition");
                 }
 
                 apiClient = mashery.init({
@@ -370,7 +385,7 @@ router.post('/', function (req, res) {
                 apiClient.methods.createService(svcArgs, function(svcData, serviceRawResponse) {
                     apiId = svcData.id;
                     apiName = svcData.name;
-                    console.log("Created new service '%s' with ID '%s'", apiName, apiId);
+                    log.info("Created new service '%s' with ID '%s'", apiName, apiId);
 
                     if (serviceData.endpoints) {
                         serviceName = serviceData.name;
@@ -389,7 +404,7 @@ router.post('/', function (req, res) {
                 areaUuid: srcAreaUuid
             });
             try {
-                apiClient.methods.fetchAllServices(svcsArgs, function (svcsData, svcsRawResponse) {
+                apiClient.methods.fetchAllServices(svcsArgs, function(svcsData, svcsRawResponse) {
                     var srcRange = "1 - " + svcsData.length;
                     var totalCount = parseInt(svcsRawResponse.headers["x-total-count"]);
                     var srcRemain = totalCount - srcOffset - svcsData.length;
@@ -442,7 +457,7 @@ router.post('/', function (req, res) {
                 areaUuid: tgtAreaUuid
             });
             try {
-                apiClient.methods.fetchAllServices(svcsArgs, function (svcsData, svcsRawResponse) {
+                apiClient.methods.fetchAllServices(svcsArgs, function(svcsData, svcsRawResponse) {
                     var tgtRange = "1 - " + svcsData.length;
                     var totalCount = parseInt(svcsRawResponse.headers["x-total-count"]);
                     var tgtRemain = totalCount - tgtOffset - svcsData.length;
