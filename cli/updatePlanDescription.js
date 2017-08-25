@@ -28,14 +28,9 @@ var args = require('optimist').argv,
     ' -g, --package     Package UUID (required if Plan UUID is specified)\n' +
     ' -n, --plan        Plan UUID\n' +
     ' -a, --area        Target Mashery area UUID for API definition\n' +
-    ' -p, --print       Print output only without saving Mashery definitions\n' +
-    ' -e, --error       Fail on error and terminate script\n' +
-    ' -d, --debug       Print verbose progress and debugging information\n';
+    ' -v, --verbose     Print verbose progress and debugging information\n';
 
-var debug = args.d !== undefined || args.debug !== undefined;
-var printOnly = args.p !== undefined || args.print !== undefined;
-var failOnError = args.e !== undefined || args.error !== undefined;
-var interval = args.i ? parseInt(args.i) : (args.interval ? parseInt(args.interval) : 3000);
+var verbose = !_.isNil(args.v) || !_.isNil(args.verbose);
 
 if (args.h || args.help) {
     console.log(help);
@@ -67,7 +62,7 @@ var log = bunyan.createLogger({
         res: bunyan.stdSerializers.res,
         err: bunyan.stdSerializers.err
     },
-    level: args.d ? bunyan.DEBUG : (args.debug ? bunyan.DEBUG : bunyan.INFO)
+    level: verbose ? bunyan.DEBUG : bunyan.INFO
 });
 
 var apiArgs = {
@@ -120,7 +115,7 @@ var main = function() {
     if (_.isNil(packageId)) {
         apiClient.methods.fetchAllPackages(apiArgs, function(packageList, pkgsRawResponse) {
             if (_.isArray(packageList)) {
-                if (!debug) {
+                if (!verbose) {
                     bar = new ProgressBar('  [:bar] :percent Processing package :current/:total (:pkgName)', {
                         complete: '=',
                         incomplete: ' ',
@@ -167,8 +162,13 @@ var main = function() {
     }
 };
 
+/*************************************************
+ * Iterate through all plans in a given package  *
+ * @param {*} packageObj Package definition JSON *
+ * @param {*} callback   Next                    *
+ *************************************************/
 var processPackage = function(packageObj, callback) {
-    if (!debug) {
+    if (!verbose) {
         if (bar) bar.tick(1, {
             pkgName: packageObj.name
         });
@@ -189,6 +189,11 @@ var processPackage = function(packageObj, callback) {
     });
 };
 
+/*******************************************
+ * Update the plan description             *
+ * @param {*} planObj Plan definition JSON *
+ * @param {*} callback Next                *
+ *******************************************/
 var processPlan = function(planObj, callback) {
     log.debug("  Processing " + planObj.name + " (" + planObj.id + ")");
 
@@ -225,12 +230,10 @@ authenticate(
     main
 );
 
-console.log("UpdatePlanDescription\n");
-console.log("Print only: ........... %s", printOnly);
-console.log("Debug: ................ %s", args.d ? "on" : (args.debug ? "on" : "off"));
-console.log("Fail on error: ........ %s", args.e ? "true" : (args.error ? "true" : "false"));
+console.log("Update Plan Description\n-----------------------");
+console.log("Verbose: .............. %s", verbose ? "on" : "off");
 console.log("Package UUID: ......... %s", packageId ? packageId : "all");
-console.log("Plan UUID: ............ %s", planId ? planId : "all");
+console.log("Plan UUID: ............ %s\n", planId ? planId : "all");
 
 /*****************
  * error handler *
