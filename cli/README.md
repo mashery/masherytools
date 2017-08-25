@@ -19,9 +19,9 @@ From within the cli directory, run following command to see usage instructions:
 
     node <script_file>.js -h
 
-To run the application in debug mode, use following command:
+To run the application in verbose/debug mode, use following command:
 
-    node <script_file>.js [options] | node_modules/bunyan/bin/bunyan
+    node <script_file>.js -v [options] | node_modules/bunyan/bin/bunyan
 
 ## The Tools
 
