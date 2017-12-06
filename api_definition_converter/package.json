@@ -13,24 +13,19 @@
     "debug": "~2.2.0",
     "dotenv": "~2.0.0",
     "express": "~4.13.1",
-    "fs": "",
     "handlebars-dateformat": "",
     "hbs": "~3.1.0",
-    "http": "",
-    "https": "",
     "json-schema-faker": "~0.3.4",
     "lodash": "~4.14.1",
     "morgan": "~1.6.1",
     "multer": "^1.0.1",
     "node-jsxml": "",
-    "path": "",
     "pusher": "~1.3.0",
     "raml-1-parser": "",
     "serve-favicon": "~2.3.0",
     "swagger-parser": "",
     "twilio": "",
     "typeof--": "^1.3.3",
-    "underscore" : "",
-    "url": ""
+    "underscore" : ""
   }
 }
