@@ -18,6 +18,12 @@ Post clone of repository, perform the following steps:
 From within the cli directory, run following command to see usage instructions:
 
     node <script_file>.js -h
+    Options:
+    -h, --help        Print this message
+    -g, --package     Package UUID (required if Plan UUID is specified)
+    -n, --plan        Plan UUID
+    -a, --area        Target Mashery area UUID for API definition
+    -v, --verbose     Print verbose progress and debugging information
 
 To run the application in verbose/debug mode, use following command:
 
