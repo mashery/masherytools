@@ -73,7 +73,7 @@ var apiArgs = {
     }
 };
 
-var authenticate = function(user, pwd, key, secret, uuid, callback) {
+function authenticate(user, pwd, key, secret, uuid, callback) {
     var args = {
         'data': ['grant_type=password&username=', user, '&password=', pwd, '&scope=', uuid].join(''),
         'headers': {
@@ -111,7 +111,7 @@ apiClient.registerMethod("fetchAllPlanServices", "https://api.mashery.com/v3/res
 /******************
  * Program driver *
  ******************/
-var main = function() {
+function main() {
     if (_.isNil(packageId)) {
         apiClient.methods.fetchAllPackages(apiArgs, function(packageList, pkgsRawResponse) {
             if (_.isArray(packageList)) {
@@ -167,7 +167,7 @@ var main = function() {
  * @param {*} packageObj Package definition JSON *
  * @param {*} callback   Next                    *
  *************************************************/
-var processPackage = function(packageObj, callback) {
+function processPackage(packageObj, callback) {
     if (!verbose) {
         if (bar) bar.tick(1, {
             pkgName: packageObj.name
@@ -194,7 +194,7 @@ var processPackage = function(packageObj, callback) {
  * @param {*} planObj Plan definition JSON *
  * @param {*} callback Next                *
  *******************************************/
-var processPlan = function(planObj, callback) {
+function processPlan(planObj, callback) {
     log.debug("  Processing " + planObj.name + " (" + planObj.id + ")");
 
     apiArgs.path.id = planObj.id;
@@ -221,17 +221,19 @@ var processPlan = function(planObj, callback) {
 /*************************************
  * Get an OAuth token for the V3 API *
  *************************************/
+var areaUuid = args.a ? args.a : (args.area ? args.area : config.areaUuid);
 authenticate(
     config.userId,
     config.password,
     config.apiKey,
     config.secret,
-    args.a ? args.a : (args.area ? args.area : config.areaUuid),
+    areaUuid,
     main
 );
 
 console.log("Update Plan Description\n-----------------------");
 console.log("Verbose: .............. %s", verbose ? "on" : "off");
+console.log("Area UUID: ............ %s", areaUuid);
 console.log("Package UUID: ......... %s", packageId ? packageId : "all");
 console.log("Plan UUID: ............ %s\n", planId ? planId : "all");
 
