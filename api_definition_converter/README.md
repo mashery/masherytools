@@ -12,9 +12,11 @@ Node.js v4.4.3 or later
 ## Installation
 Post clone of repository, perform the following steps:
 
-* Change into the ```api_definition_converter``` directory and run the command ```npm install```
-* Copy/rename the file ```credentials.js.sample``` to ```credentials.js``` and update to reflect your Mashery area information and V3 API key information.
 * Change into the ```api_definition_converter/node_modules/mashery``` directory and run the command ```npm install```
+* Copy the ```api_definition_converter/node_modules/mashery``` directory to a temporary directory outside of ```api_definition_converter```
+* Change into the ```api_definition_converter``` directory and run the command ```npm install```
+* Copy the ```mashery``` directory from the temporary directory back into ```api_definition_converter/node_modules/```
+* Copy/rename the file ```credentials.js.sample``` to ```credentials.js``` and update to reflect your Mashery area information and V3 API key information.
 
 ## Usage
 
